@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Cards de Estatísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Total de Chamados -->
+        <a href="{{ url_for('listar_chamados_por_status', status='todos') }}" 
+           class="block transform hover:scale-105 transition-all duration-200">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 hover:border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Total de Chamados</h3>
+                        <p class="text-2xl font-bold text-white mt-2">{{ total_chamados }}</p>
+                    </div>
+                    <div class="bg-blue-500/20 p-3 rounded-full">
+                        <i class="fas fa-ticket-alt text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Chamados Abertos -->
+        <a href="{{ url_for('listar_chamados_por_status', status='abertos') }}"
+           class="block transform hover:scale-105 transition-all duration-200">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 hover:border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Chamados Abertos</h3>
+                        <p class="text-2xl font-bold text-white mt-2">{{ chamados_abertos }}</p>
+                    </div>
+                    <div class="bg-green-500/20 p-3 rounded-full">
+                        <i class="fas fa-clock text-green-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Chamados Encerrados -->
+        <a href="{{ url_for('listar_chamados_por_status', status='encerrados') }}"
+           class="block transform hover:scale-105 transition-all duration-200">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 hover:border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Chamados Encerrados</h3>
+                        <p class="text-2xl font-bold text-white mt-2">{{ chamados_encerrados }}</p>
+                    </div>
+                    <div class="bg-purple-500/20 p-3 rounded-full">
+                        <i class="fas fa-check-circle text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Tabela de Chamados -->
+    <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-white">Visualizar Chamados</h2>
+            <a href="{{ url_for('novo_chamado') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>Novo Chamado
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-3 text-gray-400 text-xs font-medium uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-gray-400 text-xs font-medium uppercase tracking-wider">Título</th>
+                        <th class="px-6 py-3 text-gray-400 text-xs font-medium uppercase tracking-wider">Solicitante</th>
+                        <th class="px-6 py-3 text-gray-400 text-xs font-medium uppercase tracking-wider">Data</th>
+                        <th class="px-6 py-3 text-gray-400 text-xs font-medium uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-gray-400 text-xs font-medium uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                    {% for chamado in chamados %}
+                    <tr class="hover:bg-gray-700">
+                        <td class="px-6 py-4 text-sm text-gray-300">{{ chamado.id }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-300">{{ chamado.titulo }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-300">{{ chamado.autor.nome }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-300">{{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 text-xs rounded-full
+                                {% if chamado.status == 'Aberto' %}
+                                    bg-green-500/20 text-green-400
+                                {% elif chamado.status == 'Em Andamento' %}
+                                    bg-yellow-500/20 text-yellow-400
+                                {% else %}
+                                    bg-blue-500/20 text-blue-400
+                                {% endif %}">
+                                {{ chamado.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" 
+                                   class="text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if chamado.status == 'Aberto' %}
+                                <a href="{{ url_for('encerrar_chamado', id=chamado.id) }}" 
+                                   class="text-red-400 hover:text-red-300">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

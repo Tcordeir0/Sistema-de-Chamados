@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h2 class="text-2xl font-bold mb-6">Meus Chamados</h2>
+    
+    <div class="grid gap-6">
+        {% for chamado in chamados %}
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-xl font-semibold mb-2">{{ chamado.titulo }}</h3>
+                    <p class="text-gray-600 mb-4">{{ chamado.descricao }}</p>
+                    {% if chamado.resposta %}
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700">Resposta:</label>
+                        <textarea class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none bg-gray-50" 
+                                rows="4" 
+                                readonly>{{ chamado.resposta }}</textarea>
+                    </div>
+                    {% endif %}
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm 
+                    {% if chamado.status == 'Aberto' %}
+                        bg-green-100 text-green-800
+                    {% elif chamado.status == 'Em Andamento' %}
+                        bg-yellow-100 text-yellow-800
+                    {% else %}
+                        bg-blue-100 text-blue-800
+                    {% endif %}
+                ">
+                    {{ chamado.status }}
+                </span>
+            </div>
+            
+            <div class="mt-4 flex flex-wrap gap-4">
+                <div class="flex items-center text-sm text-gray-500">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    <span>Criado em: {{ chamado.data_criacao.strftime('%d/%m/%Y') }}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-500">
+                    <i class="fas fa-user mr-2"></i>
+                    <span>Autor: {{ chamado.autor.nome }}</span>
+                </div>
+            </div>
+
+            {% if current_user.is_admin %}
+            <div class="mt-4">
+                <form action="{{ url_for('responder_chamado', chamado_id=chamado.id) }}" method="post">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Responder:</label>
+                        <textarea name="resposta" 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 resize-none" 
+                                rows="4" 
+                                required></textarea>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Enviar Resposta
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-8">
+        <a href="{{ url_for('novo_chamado') }}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Novo Chamado
+        </a>
+    </div>
+</div>
+{% endblock %}

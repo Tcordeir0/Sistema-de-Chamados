@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borgno Transportes - Portal de Serviços</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("ecYNzPKhLVsD_cNRs");
+        })();
+        
+        function enviarEmail(assunto, mensagem) {
+            return emailjs.send("service_e2brzs9", "template_fph5zj2", {
+                to_email: "chamados@borgnotransportes.com.br",
+                subject: assunto,
+                message: mensagem
+            });
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #ffffff;
+        }
+        
+        .gradient-border {
+            position: relative;
+            border-radius: 0.5rem;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            padding: 1px;
+        }
+        
+        .gradient-border > div {
+            background: #1f2937;
+            border-radius: 0.5rem;
+        }
+        
+        .glass-effect {
+            background: rgba(31, 41, 55, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Estilos para inputs e textareas */
+        input, textarea {
+            background-color: rgba(31, 41, 55, 0.8) !important;
+            border: 1px solid rgba(75, 85, 99, 0.4) !important;
+            color: #ffffff !important;
+        }
+        
+        input:focus, textarea:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+        }
+        
+        /* Estilos para botões */
+        .btn-primary {
+            background: linear-gradient(to right, #3b82f6, #2563eb);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #2563eb, #1d4ed8);
+            transform: translateY(-1px);
+        }
+        
+        /* Animações */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}" class="text-white text-xl font-semibold flex items-center">
+                        <i class="fas fa-truck mr-2"></i>
+                        Borgno Transportes
+                    </a>
+                    
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-center space-x-4">
+                            <a href="{{ url_for('novo_chamado') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                <i class="fas fa-plus-circle mr-2"></i>
+                                Novo Chamado
+                            </a>
+                            
+                            {% if current_user.has_role('ADM') %}
+                            <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Dashboard
+                            </a>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                <i class="fas fa-list-alt mr-2"></i>
+                                Meus Chamados
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hidden md:block">
+                    <div class="flex items-center">
+                        <span class="text-gray-300 mr-4">
+                            <i class="fas fa-user mr-2"></i>
+                            {{ current_user.nome }}
+                        </span>
+                        <a href="{{ url_for('logout') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Sair
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button type="button" class="text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                        <span class="sr-only">Open main menu</span>
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="md:hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="{{ url_for('novo_chamado') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Novo Chamado
+                </a>
+                
+                {% if current_user.has_role('ADM') %}
+                <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Dashboard
+                </a>
+                {% endif %}
+                
+                <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-list-alt mr-2"></i>
+                    Meus Chamados
+                </a>
+                
+                <div class="border-t border-gray-700 pt-4 pb-3">
+                    <div class="flex items-center px-5">
+                        <div class="text-base font-medium text-gray-400">{{ current_user.nome }}</div>
+                    </div>
+                    <div class="mt-3 px-2">
+                        <a href="{{ url_for('logout') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Sair
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <div class="min-h-screen">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="fixed top-4 right-4 z-50 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="glass-effect px-4 py-2 rounded-lg text-sm animate-fadeIn
+                            {% if category == 'success' %}
+                                text-green-400 border-green-500/20
+                            {% elif category == 'error' %}
+                                text-red-400 border-red-500/20
+                            {% else %}
+                                text-blue-400 border-blue-500/20
+                            {% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

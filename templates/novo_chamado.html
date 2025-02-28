@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-gray-800 rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-white mb-6">Novo Chamado</h1>
+            
+            <form method="POST" onsubmit="return enviarNovoChamado(event)">
+                <div class="space-y-6">
+                    <div>
+                        <label for="titulo" class="block text-sm font-medium text-gray-300">Título</label>
+                        <input type="text" id="titulo" name="titulo" required
+                               class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="descricao" class="block text-sm font-medium text-gray-300">Descrição</label>
+                        <textarea id="descricao" name="descricao" rows="6" required
+                                  class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="prioridade" class="block text-sm font-medium text-gray-300">Prioridade</label>
+                        <select id="prioridade" name="prioridade" required
+                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Selecione a prioridade</option>
+                            <option value="Crítico">Crítico</option>
+                            <option value="Não tão crítico">Não tão crítico</option>
+                            <option value="Tranquilo">Tranquilo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4">
+                        <a href="{{ url_for('meus_chamados') }}" 
+                           class="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors">
+                            Cancelar
+                        </a>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-paper-plane mr-2"></i>Criar Chamado
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function enviarNovoChamado(event) {
+    const form = event.target;
+    const titulo = form.titulo.value;
+    const descricao = form.descricao.value;
+    const prioridade = form.prioridade.value;
+    
+    // Enviar email via EmailJS
+    enviarEmail(
+        `Novo Chamado: ${titulo}`,
+        `
+        <h2>Novo Chamado Registrado</h2>
+        <p><strong>Título:</strong> ${titulo}</p>
+        <p><strong>Descrição:</strong> ${descricao}</p>
+        <p><strong>Prioridade:</strong> ${prioridade}</p>
+        <p><strong>Autor:</strong> {{ current_user.nome }}</p>
+        <p><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+        `
+    ).then(
+        function(response) {
+            console.log("Email enviado com sucesso!", response);
+        },
+        function(error) {
+            console.error("Erro ao enviar email:", error);
+        }
+    );
+    
+    return true;
+}
+</script>
+{% endblock %}
