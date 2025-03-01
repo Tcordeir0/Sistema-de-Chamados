@@ -4,10 +4,14 @@
 
     window.enviarEmailChamado = function(chamadoId, titulo, descricao, autor) {
         const templateParams = {
-            chamado_id: chamadoId,
-            titulo: titulo,
-            descricao: descricao,
-            autor: autor,
+            to_name: "Equipe de Suporte",
+            from_name: autor,
+            message: `
+Chamado #${chamadoId}
+
+Título: ${titulo}
+${descricao}
+`,
             to_email: 'chamados@borgnotransportes.com.br'
         };
 

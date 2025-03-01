@@ -175,15 +175,15 @@
                 <div class="flex items-center">
                     <!-- Notificações -->
                     <div class="relative mr-4">
-                        <button id="notificationsBtn" class="text-gray-300 hover:text-white p-2 rounded-full relative cursor-pointer">
+                        <button id="notificationsBtn" class="text-gray-300 hover:text-white p-2 rounded-full relative cursor-pointer z-10">
                             <i class="fas fa-bell text-lg"></i>
                             <span id="notificationCount" class="notification-badge hidden">0</span>
                         </button>
-                        <div id="notificationsDropdown" class="notifications-dropdown">
+                        <div id="notificationsDropdown" class="notifications-dropdown" style="z-index: 100;">
                             <div class="p-4 border-b border-gray-700">
                                 <h3 class="text-lg font-semibold text-white">Notificações</h3>
                             </div>
-                            <div id="notificationsList">
+                            <div id="notificationsList" class="max-h-96 overflow-y-auto">
                                 <!-- Notificações serão inseridas aqui via JavaScript -->
                             </div>
                         </div>
