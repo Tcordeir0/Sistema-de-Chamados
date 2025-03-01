@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⌨️ Sistema de Chamados - Borgno Transportes</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233b82f6' d='M192 0c-17.7 0-32 14.3-32 32V64c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32V32c0-17.7-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32V192c0-17.7-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32v32c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32V352c0-17.7-14.3-32-32-32H192zM16 232v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V232c0-13.3-10.7-24-24-24H40c-13.3 0-24 10.7-24 24zM40 368c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V392c0-13.3-10.7-24-24-24H40zM40 72c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V96c0-13.3-10.7-24-24-24H40z'/></svg>">
+    <title>🎧 Sistema de Chamados - Borgno Transportes</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233B82F6' d='M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 336H54c-3.314 0-6-2.678-6-5.992V117.992A5.993 5.993 0 0 1 54 112h404c3.314 0 6 2.678 6 5.992v276.016a5.993 5.993 0 0 1-6 6zM128 400c-44.112 0-80-35.888-80-80s35.888-80 80-80c31.909 0 59.382 18.673 72.313 45.646l-24.852 12.926c-8.56-16.477-25.895-27.572-45.461-27.572-28.276 0-51.2 22.924-51.2 51.2s22.924 51.2 51.2 51.2c19.566 0 36.901-11.095 45.461-27.572l24.852 12.926C187.382 381.327 159.909 400 128 400zm256 0c-44.112 0-80-35.888-80-80s35.888-80 80-80c31.909 0 59.382 18.673 72.313 45.646l-24.852 12.926c-8.56-16.477-25.895-27.572-45.461-27.572-28.276 0-51.2 22.924-51.2 51.2s22.924 51.2 51.2 51.2c19.566 0 36.901-11.095 45.461-27.572l24.852 12.926C443.382 381.327 415.909 400 384 400z'/></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -437,6 +437,34 @@
                 z-index: 9999;
             `;
         });
+    </script>
+    <script>
+        // Monitor de Inatividade
+        let timeoutId;
+        const inactivityTime = 60000; // 1 minuto em milissegundos
+
+        function resetTimer() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(logout, inactivityTime);
+        }
+
+        function logout() {
+            window.location.href = "{{ url_for('logout') }}";
+        }
+
+        // Eventos para resetar o timer
+        function setupInactivityMonitor() {
+            const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+            events.forEach(event => {
+                document.addEventListener(event, resetTimer);
+            });
+            resetTimer();
+        }
+
+        // Iniciar monitoramento apenas se o usuário estiver logado
+        {% if current_user.is_authenticated %}
+            document.addEventListener('DOMContentLoaded', setupInactivityMonitor);
+        {% endif %}
     </script>
 </body>
 </html>

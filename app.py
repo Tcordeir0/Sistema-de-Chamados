@@ -1,5 +1,5 @@
-from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from datetime import datetime, timedelta
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from functools import wraps
@@ -7,11 +7,38 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from flask_mail import Mail, Message
 import secrets
+from flask_talisman import Talisman
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui'
+app.config['SECRET_KEY'] = secrets.token_hex(32)  # Chave secreta forte e aleatória
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Tcorde0%40@localhost:3306/sistema_chamados'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=1)  # Sessão expira em 1 minuto
+app.config['SESSION_COOKIE_SECURE'] = True  # Cookies só via HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Cookies não acessíveis via JavaScript
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção contra CSRF
+
+# Configuração do Talisman (Segurança HTTPS e Headers)
+talisman = Talisman(
+    app,
+    force_https=True,
+    strict_transport_security=True,
+    session_cookie_secure=True,
+    content_security_policy={
+        'default-src': ["'self'", 'https:', "'unsafe-inline'", "'unsafe-eval'"],
+        'img-src': ["'self'", 'https:', 'data:'],
+        'font-src': ["'self'", 'https:', 'data:'],
+    }
+)
+
+# Configuração do Rate Limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 # Configuração do fuso horário
 TIMEZONE = pytz.timezone('America/Sao_Paulo')
@@ -117,6 +144,7 @@ def sistema_chamados():
     return redirect(url_for('meus_chamados'))
 
 @app.route('/registro', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")  # Limite de 3 registros por hora
 def registro():
     if current_user.is_authenticated:
         if current_user.has_role('ADM'):
@@ -132,18 +160,22 @@ def registro():
             flash('Email já cadastrado.')
             return redirect(url_for('registro'))
         
-        hash_senha = generate_password_hash(senha)
+        hash_senha = generate_password_hash(senha, method='scrypt')
         novo_usuario = Usuario(nome=nome, email=email, senha=hash_senha, is_admin=False)
         
-        db.session.add(novo_usuario)
-        db.session.commit()
-        
-        login_user(novo_usuario)
-        return redirect(url_for('meus_chamados'))
-    
+        try:
+            db.session.add(novo_usuario)
+            db.session.commit()
+            flash('Cadastro realizado com sucesso!', 'success')
+            return redirect(url_for('login'))
+        except:
+            db.session.rollback()
+            flash('Erro ao cadastrar usuário!', 'error')
+            
     return render_template('registro.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")  # Limite de 5 tentativas por minuto
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -154,12 +186,10 @@ def login():
         
         usuario = Usuario.query.filter_by(email=email).first()
         if usuario and check_password_hash(usuario.senha, senha):
-            login_user(usuario)
+            login_user(usuario, remember=True)
+            session.permanent = True  # Ativa a expiração da sessão
             return redirect(url_for('home'))
-        
-        flash('Email ou senha incorretos.')
-        return redirect(url_for('login'))
-    
+        flash('Email ou senha inválidos!', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -355,6 +385,7 @@ def teste_email():
         return redirect(url_for('index'))
 
 @app.route('/esqueci-senha', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")  # Limite de 3 tentativas por hora
 def esqueci_senha():
     if request.method == 'POST':
         email = request.form.get('email')
@@ -365,23 +396,18 @@ def esqueci_senha():
             usuario.reset_token = token
             db.session.commit()
             
+            # Envio do email com token seguro
             reset_url = url_for('redefinir_senha', token=token, _external=True)
-            
             msg = Message('Redefinição de Senha',
-                         sender='seu-email@gmail.com',
-                         recipients=[email])
-            msg.body = f'''Para redefinir sua senha, acesse o link:
-{reset_url}
-
-Se você não solicitou a redefinição de senha, ignore este email.
-'''
+                        sender='seu-email@gmail.com',
+                        recipients=[email])
+            msg.body = f'Para redefinir sua senha, acesse o link: {reset_url}'
             mail.send(msg)
-            flash('Um email foi enviado com instruções para redefinir sua senha.', 'info')
+            
+            flash('Email de redefinição enviado!', 'success')
             return redirect(url_for('login'))
-        
-        flash('Email não encontrado.', 'error')
-        return redirect(url_for('esqueci_senha'))
-    
+            
+        flash('Email não encontrado!', 'error')
     return render_template('esqueci_senha.html')
 
 @app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
