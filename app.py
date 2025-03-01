@@ -1,8 +1,9 @@
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 import pytz
 from flask_mail import Mail, Message
 import secrets
@@ -81,6 +82,7 @@ def load_user(user_id):
     return Usuario.query.get(int(user_id))
 
 def admin_required(f):
+    @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.has_role('ADM'):
             return jsonify({'error': 'Não autorizado'}), 403

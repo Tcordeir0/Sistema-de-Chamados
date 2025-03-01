@@ -157,6 +157,14 @@ function reprovarChamado() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Enviar email de reprovação
+            enviarEmailStatus(
+                chamadoIdParaReprovar,
+                '{{ chamado.titulo }}',
+                '{{ chamado.autor.nome }}',
+                'Reprovado',
+                justificativa
+            );
             window.location.reload();
         }
     });
@@ -170,6 +178,13 @@ function encerrarChamado(chamadoId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Enviar email de encerramento
+                enviarEmailStatus(
+                    chamadoId,
+                    '{{ chamado.titulo }}',
+                    '{{ chamado.autor.nome }}',
+                    'Encerrado'
+                );
                 window.location.reload();
             }
         });
