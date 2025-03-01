@@ -24,16 +24,12 @@
                 
                 {% if current_user.has_role('ADM') and chamado.status == 'Aberto' %}
                 <div class="flex space-x-4">
-                    <a href="{{ url_for('encerrar_chamado', id=chamado.id) }}" 
-                       class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        Encerrar Chamado
-                    </a>
-                    <a href="{{ url_for('reprovar_chamado', id=chamado.id) }}" 
-                       class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center">
-                        <i class="fas fa-times-circle mr-2"></i>
-                        Reprovar Chamado
-                    </a>
+                    <button onclick="encerrarChamado({{ chamado.id }})" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-check-circle mr-2"></i>Encerrar
+                    </button>
+                    <button onclick="abrirModalReprovacao({{ chamado.id }})" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        <i class="fas fa-times-circle mr-2"></i>Reprovar
+                    </button>
                 </div>
                 {% endif %}
             </div>
@@ -83,6 +79,25 @@
     </div>
 </div>
 
+<!-- Modal de Reprovação -->
+<div id="modalReprovacao" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
+    <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+        <h3 class="text-xl font-bold text-white mb-4">Reprovar Chamado</h3>
+        <div class="mb-4">
+            <label for="justificativa" class="block text-sm font-medium text-gray-300 mb-2">Justificativa da Reprovação</label>
+            <textarea id="justificativa" rows="4" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required></textarea>
+        </div>
+        <div class="flex justify-end space-x-4">
+            <button onclick="fecharModalReprovacao()" class="px-4 py-2 text-gray-300 hover:text-white transition-colors">
+                Cancelar
+            </button>
+            <button onclick="reprovarChamado()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                Confirmar Reprovação
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 function enviarRespostaChamado(event) {
     const form = event.target;
@@ -110,23 +125,55 @@ function enviarRespostaChamado(event) {
     return true;
 }
 
-function encerrarChamado(titulo, emailAutor) {
-    enviarEmail(
-        `Chamado #{{ chamado.id }} foi encerrado`,
-        `
-        <h2>Seu chamado foi encerrado</h2>
-        <p><strong>Título:</strong> ${titulo}</p>
-        <p><strong>Status:</strong> Fechado</p>
-        <p>O chamado foi encerrado por um administrador.</p>
-        `
-    ).then(
-        function(response) {
-            console.log("Email enviado com sucesso!", response);
+let chamadoIdParaReprovar = null;
+
+function abrirModalReprovacao(chamadoId) {
+    chamadoIdParaReprovar = chamadoId;
+    document.getElementById('modalReprovacao').classList.remove('hidden');
+    document.getElementById('modalReprovacao').classList.add('flex');
+    document.getElementById('justificativa').value = '';
+}
+
+function fecharModalReprovacao() {
+    document.getElementById('modalReprovacao').classList.add('hidden');
+    document.getElementById('modalReprovacao').classList.remove('flex');
+    chamadoIdParaReprovar = null;
+}
+
+function reprovarChamado() {
+    const justificativa = document.getElementById('justificativa').value.trim();
+    if (!justificativa) {
+        alert('Por favor, forneça uma justificativa para a reprovação.');
+        return;
+    }
+
+    fetch(`/reprovar_chamado/${chamadoIdParaReprovar}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
         },
-        function(error) {
-            console.error("Erro ao enviar email:", error);
+        body: JSON.stringify({ justificativa: justificativa })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
         }
-    );
+    });
+}
+
+function encerrarChamado(chamadoId) {
+    if (confirm('Tem certeza que deseja encerrar este chamado?')) {
+        fetch(`/encerrar_chamado/${chamadoId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    }
 }
 </script>
 {% endblock %}

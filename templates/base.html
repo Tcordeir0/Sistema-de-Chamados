@@ -155,11 +155,11 @@
                 <div class="flex items-center">
                     <a href="{{ url_for('home') }}" class="text-white text-xl font-bold flex items-center">
                         <i class="fas fa-truck text-blue-500 mr-2"></i>
-                        Borgno
+                        Borgno Transportes
                     </a>
                     <div class="ml-10 flex items-baseline space-x-4">
                         <a href="{{ url_for('home') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-home mr-2"></i>Home
+                            <i class="fas fa-headset mr-2"></i>Sistema de Chamados
                         </a>
                         {% if current_user.has_role('ADM') %}
                         <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
@@ -174,12 +174,12 @@
                 </div>
                 <div class="flex items-center">
                     <!-- Notificações -->
-                    <div class="relative mr-4">
-                        <button id="notificationsBtn" class="text-gray-300 hover:text-white p-2 rounded-full relative cursor-pointer z-10">
+                    <div class="relative mr-4" style="position: relative;">
+                        <button id="notificationsBtn" class="text-gray-300 hover:text-white p-2 rounded-full relative cursor-pointer" style="position: relative; z-index: 1;">
                             <i class="fas fa-bell text-lg"></i>
                             <span id="notificationCount" class="notification-badge hidden">0</span>
                         </button>
-                        <div id="notificationsDropdown" class="notifications-dropdown" style="z-index: 100;">
+                        <div id="notificationsDropdown" class="notifications-dropdown" style="position: absolute; z-index: 9999; right: 0; top: 100%; margin-top: 0.5rem;">
                             <div class="p-4 border-b border-gray-700">
                                 <h3 class="text-lg font-semibold text-white">Notificações</h3>
                             </div>

@@ -7,7 +7,7 @@
             to_name: "Equipe de Suporte",
             from_name: autor,
             message: `
-Chamado #${chamadoId}
+Novo Chamado #${chamadoId}
 
 Título: ${titulo}
 ${descricao}
@@ -22,6 +22,31 @@ ${descricao}
             })
             .catch(function(error) {
                 console.error('Erro ao enviar email:', error);
+                return false;
+            });
+    };
+
+    window.enviarEmailStatus = function(chamadoId, titulo, autor, status, justificativa = '') {
+        const templateParams = {
+            to_name: autor,
+            from_name: "Equipe de Suporte",
+            message: `
+Atualização do Chamado #${chamadoId}
+
+Título: ${titulo}
+Status: ${status}
+${justificativa ? `\nJustificativa: ${justificativa}` : ''}
+`,
+            to_email: 'chamados@borgnotransportes.com.br'
+        };
+
+        return emailjs.send('service_e2brzs9', 'template_fph5zj2', templateParams)
+            .then(function(response) {
+                console.log('Email de status enviado com sucesso:', response);
+                return true;
+            })
+            .catch(function(error) {
+                console.error('Erro ao enviar email de status:', error);
                 return false;
             });
     };

@@ -80,6 +80,13 @@ class Notificacao(db.Model):
 def load_user(user_id):
     return Usuario.query.get(int(user_id))
 
+def admin_required(f):
+    def decorated_function(*args, **kwargs):
+        if not current_user.has_role('ADM'):
+            return jsonify({'error': 'Não autorizado'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -245,53 +252,53 @@ def responder_chamado(id):
     flash('Resposta enviada com sucesso!', 'success')
     return redirect(url_for('visualizar_chamado', id=id))
 
-@app.route('/encerrar_chamado/<int:id>')
+@app.route('/reprovar_chamado/<int:id>', methods=['POST'])
 @login_required
-def encerrar_chamado(id):
-    if not current_user.has_role('ADM'):
-        flash('Você não tem permissão para encerrar chamados.', 'error')
-        return redirect(url_for('visualizar_chamado', id=id))
-    
-    chamado = Chamado.query.get_or_404(id)
-    chamado.status = 'Encerrado'
-    
-    # Criar notificação para o autor do chamado
-    if chamado.autor_id != current_user.id:
-        notificacao = Notificacao(
-            usuario_id=chamado.autor_id,
-            chamado_id=chamado.id,
-            tipo='resolucao',
-            mensagem=f'Seu chamado foi resolvido: {chamado.titulo}'
-        )
-        db.session.add(notificacao)
-    
-    db.session.commit()
-    flash('Chamado encerrado com sucesso!', 'success')
-    return redirect(url_for('dashboard'))
-
-@app.route('/reprovar_chamado/<int:id>')
-@login_required
+@admin_required
 def reprovar_chamado(id):
-    if not current_user.has_role('ADM'):
-        flash('Acesso negado.', 'error')
-        return redirect(url_for('meus_chamados'))
-    
     chamado = Chamado.query.get_or_404(id)
+    data = request.get_json()
+    justificativa = data.get('justificativa')
+    
+    if not justificativa:
+        return jsonify({'success': False, 'error': 'Justificativa é obrigatória'})
+    
     chamado.status = 'Reprovado'
     db.session.commit()
-
-    # Criar notificação para o autor do chamado
+    
+    # Criar notificação
     notificacao = Notificacao(
-        usuario_id=chamado.autor_id,
-        chamado_id=chamado.id,
         tipo='reprovacao',
-        mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado.'
+        mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado. Justificativa: {justificativa}',
+        usuario_id=chamado.autor_id,
+        chamado_id=chamado.id
     )
     db.session.add(notificacao)
     db.session.commit()
-
+    
     flash('Chamado reprovado com sucesso!', 'success')
-    return redirect(url_for('dashboard'))
+    return jsonify({'success': True})
+
+@app.route('/encerrar_chamado/<int:id>', methods=['POST'])
+@login_required
+@admin_required
+def encerrar_chamado(id):
+    chamado = Chamado.query.get_or_404(id)
+    chamado.status = 'Encerrado'
+    db.session.commit()
+    
+    # Criar notificação
+    notificacao = Notificacao(
+        tipo='encerramento',
+        mensagem=f'Seu chamado "{chamado.titulo}" foi encerrado.',
+        usuario_id=chamado.autor_id,
+        chamado_id=chamado.id
+    )
+    db.session.add(notificacao)
+    db.session.commit()
+    
+    flash('Chamado encerrado com sucesso!', 'success')
+    return jsonify({'success': True})
 
 @app.route('/listar_chamados/<status>')
 @login_required
