@@ -58,28 +58,39 @@ document.getElementById('formChamado').addEventListener('submit', async function
     const descricao = document.getElementById('descricao').value;
     const prioridade = document.getElementById('prioridade').value;
 
-    // Primeiro enviar o formulário para criar o chamado
-    const formData = new FormData(this);
-    const response = await fetch("{{ url_for('novo_chamado') }}", {
-        method: 'POST',
-        body: formData
-    });
+    try {
+        // Primeiro enviar o formulário para criar o chamado
+        const formData = new FormData(this);
+        const response = await fetch("{{ url_for('novo_chamado') }}", {
+            method: 'POST',
+            body: formData
+        });
 
-    if (response.ok) {
-        // Se o chamado foi criado com sucesso, enviar o email
-        try {
-            await enviarEmailChamado(
-                null, // ID será definido após criação
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Se o chamado foi criado com sucesso, enviar o email
+            const emailResult = await enviarEmailChamado(
+                data.chamado_id, // Usar o ID real do chamado
                 titulo,
-                descricao,
+                `Prioridade: ${prioridade}\n\n${descricao}`,
                 "{{ current_user.nome }}"
             );
-        } catch (error) {
-            console.error('Erro ao enviar email:', error);
+
+            if (emailResult) {
+                console.log('Email enviado com sucesso');
+            } else {
+                console.error('Falha ao enviar email');
+            }
+            
+            // Redirecionar para a lista de chamados
+            window.location.href = "{{ url_for('meus_chamados') }}";
+        } else {
+            throw new Error('Erro ao criar chamado');
         }
-        
-        // Redirecionar para a lista de chamados
-        window.location.href = "{{ url_for('meus_chamados') }}";
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Ocorreu um erro ao criar o chamado. Por favor, tente novamente.');
     }
 });
 </script>

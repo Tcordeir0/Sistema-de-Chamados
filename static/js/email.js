@@ -1,6 +1,6 @@
 (function() {
     // Inicializar EmailJS com seu User ID
-    emailjs.init("SEU_USER_ID_AQUI");
+    emailjs.init("ecYNzPKhLVsD_cNRs"); // Você precisará substituir pelo seu User ID real do EmailJS
 
     window.enviarEmailChamado = function(chamadoId, titulo, descricao, autor) {
         const templateParams = {
@@ -8,10 +8,10 @@
             titulo: titulo,
             descricao: descricao,
             autor: autor,
-            to_email: 'chamados.borgnotransportes.com.br'
+            to_email: 'chamados@borgnotransportes.com.br'
         };
 
-        return emailjs.send('default_service', 'template_chamados', templateParams)
+        return emailjs.send('service_e2brzs9', 'template_fph5zj2', templateParams)
             .then(function(response) {
                 console.log('Email enviado com sucesso:', response);
                 return true;

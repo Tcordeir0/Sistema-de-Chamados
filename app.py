@@ -196,8 +196,8 @@ def novo_chamado():
         db.session.commit()
         
         flash('Chamado criado com sucesso!', 'success')
-        return redirect(url_for('meus_chamados'))
-    
+        return jsonify({'success': True, 'chamado_id': chamado.id})
+        
     return render_template('novo_chamado.html')
 
 @app.route('/visualizar_chamado/<int:id>')
