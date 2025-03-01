@@ -6,7 +6,7 @@
         <div class="bg-gray-800 rounded-lg shadow-lg p-6">
             <h1 class="text-2xl font-bold text-white mb-6">Novo Chamado</h1>
             
-            <form method="POST" onsubmit="return enviarNovoChamado(event)">
+            <form id="formChamado" method="POST">
                 <div class="space-y-6">
                     <div>
                         <label for="titulo" class="block text-sm font-medium text-gray-300">Título</label>
@@ -47,34 +47,40 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
-function enviarNovoChamado(event) {
-    const form = event.target;
-    const titulo = form.titulo.value;
-    const descricao = form.descricao.value;
-    const prioridade = form.prioridade.value;
+document.getElementById('formChamado').addEventListener('submit', async function(e) {
+    e.preventDefault();
     
-    // Enviar email via EmailJS
-    enviarEmail(
-        `Novo Chamado: ${titulo}`,
-        `
-        <h2>Novo Chamado Registrado</h2>
-        <p><strong>Título:</strong> ${titulo}</p>
-        <p><strong>Descrição:</strong> ${descricao}</p>
-        <p><strong>Prioridade:</strong> ${prioridade}</p>
-        <p><strong>Autor:</strong> {{ current_user.nome }}</p>
-        <p><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-        `
-    ).then(
-        function(response) {
-            console.log("Email enviado com sucesso!", response);
-        },
-        function(error) {
-            console.error("Erro ao enviar email:", error);
+    const titulo = document.getElementById('titulo').value;
+    const descricao = document.getElementById('descricao').value;
+    const prioridade = document.getElementById('prioridade').value;
+
+    // Primeiro enviar o formulário para criar o chamado
+    const formData = new FormData(this);
+    const response = await fetch("{{ url_for('novo_chamado') }}", {
+        method: 'POST',
+        body: formData
+    });
+
+    if (response.ok) {
+        // Se o chamado foi criado com sucesso, enviar o email
+        try {
+            await enviarEmailChamado(
+                null, // ID será definido após criação
+                titulo,
+                descricao,
+                "{{ current_user.nome }}"
+            );
+        } catch (error) {
+            console.error('Erro ao enviar email:', error);
         }
-    );
-    
-    return true;
-}
+        
+        // Redirecionar para a lista de chamados
+        window.location.href = "{{ url_for('meus_chamados') }}";
+    }
+});
 </script>
 {% endblock %}

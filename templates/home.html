@@ -82,7 +82,7 @@
 
             <!-- Stats Section -->
             <section class="mt-16">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div class="bg-gray-800/50 rounded-xl p-6">
                         <div class="flex items-center justify-between">
                             <div>
@@ -94,27 +94,39 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="bg-gray-800/50 rounded-xl p-6">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-400">Em Aberto</p>
+                                <p class="text-gray-400">Chamados Abertos</p>
                                 <h4 class="text-2xl font-bold">{{ chamados_abertos }}</h4>
                             </div>
-                            <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                                <i class="fas fa-clock text-green-500"></i>
+                            <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-500"></i>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="bg-gray-800/50 rounded-xl p-6">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-400">Resolvidos</p>
-                                <h4 class="text-2xl font-bold">{{ chamados_resolvidos }}</h4>
+                                <p class="text-gray-400">Chamados Encerrados</p>
+                                <h4 class="text-2xl font-bold">{{ chamados_encerrados }}</h4>
                             </div>
-                            <div class="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check-circle text-purple-500"></i>
+                            <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800/50 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400">Chamados Reprovados</p>
+                                <h4 class="text-2xl font-bold">{{ chamados_reprovados }}</h4>
+                            </div>
+                            <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-times-circle text-red-500"></i>
                             </div>
                         </div>
                     </div>

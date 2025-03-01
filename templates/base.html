@@ -1,207 +1,389 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Borgno Transportes - Portal de Serviços</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
+    <title>Sistema de Chamados - Borgno Transportes</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script type="text/javascript">
-        (function() {
-            emailjs.init("ecYNzPKhLVsD_cNRs");
-        })();
-        
-        function enviarEmail(assunto, mensagem) {
-            return emailjs.send("service_e2brzs9", "template_fph5zj2", {
-                to_email: "chamados@borgnotransportes.com.br",
-                subject: assunto,
-                message: mensagem
-            });
-        }
-    </script>
-    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="{{ url_for('static', filename='js/email.js') }}"></script>
+    {% block head %}{% endblock %}
     <style>
+        :root {
+            --primary: #3b82f6;
+            --accent: #1f2937;
+            --background: #111827;
+            --card: #1f2937;
+            --foreground: #ffffff;
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
-            color: #ffffff;
+            background-color: var(--background);
+            color: var(--foreground);
         }
-        
-        .gradient-border {
-            position: relative;
+
+        .flash-message {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 1rem;
             border-radius: 0.5rem;
-            background: linear-gradient(to right, #3b82f6, #8b5cf6);
-            padding: 1px;
+            background: var(--card);
+            color: var(--foreground);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            opacity: 0;
+            transform: translateY(-1rem);
+            transition: all 0.3s ease-out;
         }
-        
-        .gradient-border > div {
-            background: #1f2937;
-            border-radius: 0.5rem;
+
+        .flash-message.show {
+            opacity: 1;
+            transform: translateY(0);
         }
-        
-        .glass-effect {
-            background: rgba(31, 41, 55, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+
+        .flash-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid #10b981;
         }
-        
-        /* Estilos para inputs e textareas */
-        input, textarea {
-            background-color: rgba(31, 41, 55, 0.8) !important;
-            border: 1px solid rgba(75, 85, 99, 0.4) !important;
-            color: #ffffff !important;
+
+        .flash-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid #ef4444;
         }
-        
-        input:focus, textarea:focus {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+
+        /* Notificações */
+        .notifications-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 380px;
+            max-height: 480px;
+            overflow-y: auto;
+            background: var(--card);
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            z-index: 50;
+            display: none;
+            scrollbar-width: thin;
+            scrollbar-color: #4B5563 #1F2937;
         }
-        
-        /* Estilos para botões */
-        .btn-primary {
-            background: linear-gradient(to right, #3b82f6, #2563eb);
-            transition: all 0.3s ease;
+
+        .notifications-dropdown::-webkit-scrollbar {
+            width: 8px;
         }
-        
-        .btn-primary:hover {
-            background: linear-gradient(to right, #2563eb, #1d4ed8);
-            transform: translateY(-1px);
+
+        .notifications-dropdown::-webkit-scrollbar-track {
+            background: #1F2937;
+            border-radius: 0.75rem;
         }
-        
-        /* Animações */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .notifications-dropdown::-webkit-scrollbar-thumb {
+            background-color: #4B5563;
+            border-radius: 0.75rem;
+            border: 2px solid #1F2937;
         }
-        
-        .animate-fadeIn {
-            animation: fadeIn 0.5s ease-out;
+
+        .notifications-dropdown.show {
+            display: block;
+            animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-0.5rem) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .notification-item {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 1px solid #374151;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -0.5rem;
+            right: -0.5rem;
+            background: var(--error);
+            color: white;
+            border-radius: 9999px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 1.5rem;
+            text-align: center;
+            transform-origin: center;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: .9;
+                transform: scale(1.05);
+            }
         }
     </style>
 </head>
 <body>
-    {% if current_user.is_authenticated %}
-    <nav class="bg-gray-800 border-b border-gray-700">
+    {% if current_user.is_authenticated and request.endpoint != 'home' %}
+    <nav class="bg-gray-900 border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
-                    <a href="{{ url_for('home') }}" class="text-white text-xl font-semibold flex items-center">
-                        <i class="fas fa-truck mr-2"></i>
-                        Borgno Transportes
+                    <a href="{{ url_for('home') }}" class="text-white text-xl font-bold flex items-center">
+                        <i class="fas fa-truck text-blue-500 mr-2"></i>
+                        Borgno
                     </a>
-                    
-                    <div class="hidden md:block ml-10">
-                        <div class="flex items-center space-x-4">
-                            <a href="{{ url_for('novo_chamado') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                <i class="fas fa-plus-circle mr-2"></i>
-                                Novo Chamado
-                            </a>
-                            
-                            {% if current_user.has_role('ADM') %}
-                            <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                <i class="fas fa-chart-line mr-2"></i>
-                                Dashboard
-                            </a>
-                            {% endif %}
-                            
-                            <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                <i class="fas fa-list-alt mr-2"></i>
-                                Meus Chamados
-                            </a>
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="{{ url_for('home') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-home mr-2"></i>Home
+                        </a>
+                        {% if current_user.has_role('ADM') %}
+                        <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-list-alt mr-2"></i>Meus Chamados
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <!-- Notificações -->
+                    <div class="relative mr-4">
+                        <button id="notificationsBtn" class="text-gray-300 hover:text-white p-2 rounded-full relative">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span id="notificationCount" class="notification-badge hidden">0</span>
+                        </button>
+                        <div id="notificationsDropdown" class="notifications-dropdown">
+                            <div class="p-4 border-b border-gray-700">
+                                <h3 class="text-lg font-semibold text-white">Notificações</h3>
+                            </div>
+                            <div id="notificationsList">
+                                <!-- Notificações serão inseridas aqui via JavaScript -->
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="hidden md:block">
-                    <div class="flex items-center">
-                        <span class="text-gray-300 mr-4">
-                            <i class="fas fa-user mr-2"></i>
-                            {{ current_user.nome }}
-                        </span>
-                        <a href="{{ url_for('logout') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            Sair
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Mobile menu button -->
-                <div class="md:hidden">
-                    <button type="button" class="text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
-                        <span class="sr-only">Open main menu</span>
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Mobile menu -->
-        <div class="md:hidden">
-            <div class="px-2 pt-2 pb-3 space-y-1">
-                <a href="{{ url_for('novo_chamado') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-plus-circle mr-2"></i>
-                    Novo Chamado
-                </a>
-                
-                {% if current_user.has_role('ADM') %}
-                <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-chart-line mr-2"></i>
-                    Dashboard
-                </a>
-                {% endif %}
-                
-                <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-list-alt mr-2"></i>
-                    Meus Chamados
-                </a>
-                
-                <div class="border-t border-gray-700 pt-4 pb-3">
-                    <div class="flex items-center px-5">
-                        <div class="text-base font-medium text-gray-400">{{ current_user.nome }}</div>
-                    </div>
-                    <div class="mt-3 px-2">
-                        <a href="{{ url_for('logout') }}" class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            Sair
-                        </a>
+                    
+                    <!-- Menu do usuário -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="text-gray-300 hover:text-white flex items-center">
+                            <span class="mr-2">{{ current_user.nome }}</span>
+                            <i class="fas fa-user-circle text-xl"></i>
+                        </button>
+                        <div id="userDropdown" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-gray-800 ring-1 ring-black ring-opacity-5 hidden">
+                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Sair
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
     {% endif %}
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <div id="flashMessage" class="flash-message">
+        <i class="fas fa-info-circle"></i>
+        <span id="flashText"></span>
+    </div>
+
+    {% block scripts %}{% endblock %}
     
-    <div class="min-h-screen">
+    <script>
+        // Flash Messages
+        function showFlash(message, type = 'success') {
+            const flash = document.getElementById('flashMessage');
+            const text = document.getElementById('flashText');
+            
+            flash.className = `flash-message ${type}`;
+            text.textContent = message;
+            flash.classList.add('show');
+            
+            setTimeout(() => {
+                flash.classList.remove('show');
+            }, 3000);
+        }
+
+        // User Dropdown
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', () => {
+                userDropdown.classList.toggle('hidden');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Notificações
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const notificationsDropdown = document.getElementById('notificationsDropdown');
+        const notificationsList = document.getElementById('notificationsList');
+        const notificationCount = document.getElementById('notificationCount');
+        
+        if (notificationsBtn) {
+            let notifications = [];
+            let notificationPollInterval;
+
+            function startNotificationPolling() {
+                updateNotifications();
+                notificationPollInterval = setInterval(updateNotifications, 30000); // Poll every 30 seconds
+            }
+
+            function stopNotificationPolling() {
+                if (notificationPollInterval) {
+                    clearInterval(notificationPollInterval);
+                }
+            }
+
+            // Start polling when document is ready
+            document.addEventListener('DOMContentLoaded', startNotificationPolling);
+            
+            // Stop polling when page is hidden
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopNotificationPolling();
+                } else {
+                    startNotificationPolling();
+                }
+            });
+
+            function updateNotifications() {
+                fetch('/notificacoes/nao-lidas')
+                    .then(response => response.json())
+                    .then(data => {
+                        const previousCount = notifications.length;
+                        notifications = data;
+                        renderNotifications();
+                        
+                        // Show flash message for new notifications
+                        if (data.length > previousCount) {
+                            const newCount = data.length - previousCount;
+                            showFlash(`Você tem ${newCount} nova${newCount > 1 ? 's' : ''} notificação${newCount > 1 ? 'ões' : ''}!`, 'success');
+                        }
+                    });
+            }
+
+            function renderNotifications() {
+                notificationsList.innerHTML = '';
+                
+                if (notifications.length === 0) {
+                    notificationsList.innerHTML = `
+                        <div class="p-4 text-center text-gray-400">
+                            <i class="fas fa-bell-slash mb-2 text-2xl"></i>
+                            <p>Nenhuma notificação</p>
+                        </div>
+                    `;
+                    notificationCount.classList.add('hidden');
+                } else {
+                    // Sort notifications by date, newest first
+                    notifications.sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao));
+
+                    notifications.forEach(notif => {
+                        const item = document.createElement('div');
+                        item.className = 'notification-item group hover:bg-blue-900/20 transition-colors duration-200';
+                        
+                        // Format the date to a more readable format
+                        const date = new Date(notif.data_criacao);
+                        const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }).format(date);
+                        
+                        item.innerHTML = `
+                            <div class="flex items-start p-3">
+                                <div class="flex-shrink-0">
+                                    <i class="fas ${notif.tipo === 'resposta' ? 'fa-comment' : 'fa-check-circle'} 
+                                       text-blue-500 text-xl"></i>
+                                </div>
+                                <div class="ml-3 flex-grow">
+                                    <p class="text-sm text-white">${notif.mensagem}</p>
+                                    <p class="text-xs text-gray-400 mt-1">${formattedDate}</p>
+                                </div>
+                                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <button class="text-gray-400 hover:text-white" 
+                                            onclick="markAsRead(event, ${notif.id}, ${notif.chamado_id})">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        notificationsList.appendChild(item);
+                    });
+                    
+                    notificationCount.textContent = notifications.length;
+                    notificationCount.classList.remove('hidden');
+                }
+            }
+
+            function markAsRead(event, notifId, chamadoId) {
+                event.stopPropagation(); // Prevent notification click event
+                
+                fetch(`/notificacoes/marcar-lida/${notifId}`)
+                    .then(() => {
+                        // Remove notification from list
+                        notifications = notifications.filter(n => n.id !== notifId);
+                        renderNotifications();
+                        
+                        // Show success message
+                        showFlash('Notificação marcada como lida', 'success');
+                    });
+            }
+
+            // Close notifications dropdown when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!event.target.closest('#notificationsBtn') && 
+                    !event.target.closest('#notificationsDropdown')) {
+                    notificationsDropdown.classList.remove('show');
+                }
+            });
+        }
+
+        // Flash messages do Flask
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="fixed top-4 right-4 z-50 space-y-2">
-                    {% for category, message in messages %}
-                        <div class="glass-effect px-4 py-2 rounded-lg text-sm animate-fadeIn
-                            {% if category == 'success' %}
-                                text-green-400 border-green-500/20
-                            {% elif category == 'error' %}
-                                text-red-400 border-red-500/20
-                            {% else %}
-                                text-blue-400 border-blue-500/20
-                            {% endif %}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
+                {% for category, message in messages %}
+                    showFlash('{{ message }}', '{{ category }}');
+                {% endfor %}
             {% endif %}
         {% endwith %}
-        
-        {% block content %}{% endblock %}
-    </div>
+    </script>
 </body>
 </html>

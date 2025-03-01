@@ -22,12 +22,19 @@
                     </div>
                 </div>
                 
-                {% if current_user.has_role('ADM') and chamado.status != 'Fechado' %}
-                <a href="{{ url_for('encerrar_chamado', id=chamado.id) }}" 
-                   onclick="encerrarChamado('{{ chamado.titulo }}', '{{ chamado.autor.email }}')"
-                   class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                    <i class="fas fa-times-circle mr-2"></i>Encerrar Chamado
-                </a>
+                {% if current_user.has_role('ADM') and chamado.status == 'Aberto' %}
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('encerrar_chamado', id=chamado.id) }}" 
+                       class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Encerrar Chamado
+                    </a>
+                    <a href="{{ url_for('reprovar_chamado', id=chamado.id) }}" 
+                       class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        Reprovar Chamado
+                    </a>
+                </div>
                 {% endif %}
             </div>
             

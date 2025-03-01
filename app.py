@@ -4,6 +4,8 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import pytz
+from flask_mail import Mail, Message
+import secrets
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui'
@@ -13,9 +15,17 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Configuração do fuso horário
 TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
+# Configuração do email
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'seu-email@gmail.com'  # Substitua pelo seu email
+app.config['MAIL_PASSWORD'] = 'sua-senha-app'  # Substitua pela sua senha de app
+
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+mail = Mail(app)
 
 class Usuario(UserMixin, db.Model):
     """Modelo para armazenar informações dos usuários do sistema"""
@@ -25,8 +35,10 @@ class Usuario(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    reset_token = db.Column(db.String(100), unique=True)
     chamados = db.relationship('Chamado', backref='autor', lazy=True)
     respostas = db.relationship('Resposta', backref='autor_resposta', lazy=True)
+    notificacoes = db.relationship('Notificacao', backref='usuario', lazy=True)
 
     def has_role(self, role):
         return self.is_admin if role == 'ADM' else True
@@ -37,7 +49,7 @@ class Chamado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(100), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), default='Aberto')
+    status = db.Column(db.String(20), default='Aberto')  # Valores: 'Aberto', 'Encerrado', 'Reprovado'
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
     data_atualizacao = db.Column(db.DateTime, onupdate=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
     prioridade = db.Column(db.String(20), nullable=False)
@@ -52,6 +64,17 @@ class Resposta(db.Model):
     data_resposta = db.Column(db.DateTime, default=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
     chamado_id = db.Column(db.Integer, db.ForeignKey('chamado.id'), nullable=False)
     autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+
+class Notificacao(db.Model):
+    """Modelo para armazenar notificações dos usuários"""
+    __tablename__ = 'notificacao'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    chamado_id = db.Column(db.Integer, db.ForeignKey('chamado.id'), nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)  # 'resposta' ou 'resolucao'
+    mensagem = db.Column(db.String(200), nullable=False)
+    lida = db.Column(db.Boolean, default=False)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -68,12 +91,14 @@ def index():
 def home():
     total_chamados = Chamado.query.count()
     chamados_abertos = Chamado.query.filter_by(status='Aberto').count()
-    chamados_resolvidos = Chamado.query.filter_by(status='Fechado').count()
+    chamados_encerrados = Chamado.query.filter_by(status='Encerrado').count()
+    chamados_reprovados = Chamado.query.filter_by(status='Reprovado').count()
     
     return render_template('home.html', 
                          total_chamados=total_chamados,
                          chamados_abertos=chamados_abertos,
-                         chamados_resolvidos=chamados_resolvidos)
+                         chamados_encerrados=chamados_encerrados,
+                         chamados_reprovados=chamados_reprovados)
 
 @app.route('/sistema-chamados')
 @login_required
@@ -170,7 +195,6 @@ def novo_chamado():
         db.session.add(chamado)
         db.session.commit()
         
-        # Enviar email via EmailJS (será feito pelo JavaScript no template)
         flash('Chamado criado com sucesso!', 'success')
         return redirect(url_for('meus_chamados'))
     
@@ -201,14 +225,23 @@ def responder_chamado(id):
     
     nova_resposta = Resposta(
         conteudo=resposta,
-        chamado_id=chamado.id,
+        chamado_id=id,
         autor_id=current_user.id
     )
     
     db.session.add(nova_resposta)
-    db.session.commit()
     
-    # Email será enviado via EmailJS no template
+    # Criar notificação para o autor do chamado
+    if chamado.autor_id != current_user.id:
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=chamado.id,
+            tipo='resposta',
+            mensagem=f'Nova resposta no chamado: {chamado.titulo}'
+        )
+        db.session.add(notificacao)
+    
+    db.session.commit()
     flash('Resposta enviada com sucesso!', 'success')
     return redirect(url_for('visualizar_chamado', id=id))
 
@@ -216,20 +249,48 @@ def responder_chamado(id):
 @login_required
 def encerrar_chamado(id):
     if not current_user.has_role('ADM'):
-        flash('Apenas administradores podem encerrar chamados.', 'error')
+        flash('Você não tem permissão para encerrar chamados.', 'error')
         return redirect(url_for('visualizar_chamado', id=id))
     
     chamado = Chamado.query.get_or_404(id)
-    if chamado.status == 'Fechado':
-        flash('Este chamado já está encerrado.', 'warning')
-        return redirect(url_for('visualizar_chamado', id=id))
+    chamado.status = 'Encerrado'
     
-    chamado.status = 'Fechado'
-    chamado.data_atualizacao = datetime.now(TIMEZONE).replace(tzinfo=None)
+    # Criar notificação para o autor do chamado
+    if chamado.autor_id != current_user.id:
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=chamado.id,
+            tipo='resolucao',
+            mensagem=f'Seu chamado foi resolvido: {chamado.titulo}'
+        )
+        db.session.add(notificacao)
+    
     db.session.commit()
+    flash('Chamado encerrado com sucesso!', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/reprovar_chamado/<int:id>')
+@login_required
+def reprovar_chamado(id):
+    if not current_user.has_role('ADM'):
+        flash('Acesso negado.', 'error')
+        return redirect(url_for('meus_chamados'))
     
-    # Email será enviado via EmailJS no template
-    flash('Chamado encerrado com sucesso.', 'success')
+    chamado = Chamado.query.get_or_404(id)
+    chamado.status = 'Reprovado'
+    db.session.commit()
+
+    # Criar notificação para o autor do chamado
+    notificacao = Notificacao(
+        usuario_id=chamado.autor_id,
+        chamado_id=chamado.id,
+        tipo='reprovacao',
+        mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado.'
+    )
+    db.session.add(notificacao)
+    db.session.commit()
+
+    flash('Chamado reprovado com sucesso!', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/listar_chamados/<status>')
@@ -240,7 +301,9 @@ def listar_chamados_por_status(status):
     elif status == 'abertos':
         chamados = Chamado.query.filter_by(status='Aberto').all()
     elif status == 'encerrados':
-        chamados = Chamado.query.filter_by(status='Fechado').all()
+        chamados = Chamado.query.filter_by(status='Encerrado').all()
+    elif status == 'reprovados':
+        chamados = Chamado.query.filter_by(status='Reprovado').all()
     else:
         chamados = []
     
@@ -248,7 +311,8 @@ def listar_chamados_por_status(status):
                          chamados=chamados,
                          total_chamados=Chamado.query.count(),
                          chamados_abertos=Chamado.query.filter_by(status='Aberto').count(),
-                         chamados_encerrados=Chamado.query.filter_by(status='Fechado').count())
+                         chamados_encerrados=Chamado.query.filter_by(status='Encerrado').count(),
+                         chamados_reprovados=Chamado.query.filter_by(status='Reprovado').count())
 
 @app.route('/enviar_email', methods=['POST'])
 def enviar_email():
@@ -280,6 +344,84 @@ def teste_email():
     except Exception as e:
         flash(f'Erro: {str(e)}', 'error')
         return redirect(url_for('index'))
+
+@app.route('/esqueci-senha', methods=['GET', 'POST'])
+def esqueci_senha():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        usuario = Usuario.query.filter_by(email=email).first()
+        
+        if usuario:
+            token = secrets.token_urlsafe(32)
+            usuario.reset_token = token
+            db.session.commit()
+            
+            reset_url = url_for('redefinir_senha', token=token, _external=True)
+            
+            msg = Message('Redefinição de Senha',
+                         sender='seu-email@gmail.com',
+                         recipients=[email])
+            msg.body = f'''Para redefinir sua senha, acesse o link:
+{reset_url}
+
+Se você não solicitou a redefinição de senha, ignore este email.
+'''
+            mail.send(msg)
+            flash('Um email foi enviado com instruções para redefinir sua senha.', 'info')
+            return redirect(url_for('login'))
+        
+        flash('Email não encontrado.', 'error')
+        return redirect(url_for('esqueci_senha'))
+    
+    return render_template('esqueci_senha.html')
+
+@app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    usuario = Usuario.query.filter_by(reset_token=token).first()
+    
+    if not usuario:
+        flash('Link de redefinição de senha inválido ou expirado.', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        nova_senha = request.form.get('senha')
+        usuario.senha = generate_password_hash(nova_senha)
+        usuario.reset_token = None
+        db.session.commit()
+        
+        flash('Sua senha foi redefinida com sucesso!', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('redefinir_senha.html')
+
+@app.route('/notificacoes/nao-lidas')
+@login_required
+def get_notificacoes():
+    """Retorna as notificações não lidas do usuário"""
+    notificacoes = Notificacao.query.filter_by(
+        usuario_id=current_user.id,
+        lida=False
+    ).order_by(Notificacao.data_criacao.desc()).all()
+    
+    return jsonify([{
+        'id': n.id,
+        'chamado_id': n.chamado_id,
+        'tipo': n.tipo,
+        'mensagem': n.mensagem,
+        'data_criacao': n.data_criacao.strftime('%d/%m/%Y %H:%M')
+    } for n in notificacoes])
+
+@app.route('/notificacoes/marcar-lida/<int:id>')
+@login_required
+def marcar_notificacao_lida(id):
+    """Marca uma notificação como lida"""
+    notificacao = Notificacao.query.get_or_404(id)
+    if notificacao.usuario_id != current_user.id:
+        return jsonify({'error': 'Não autorizado'}), 403
+    
+    notificacao.lida = True
+    db.session.commit()
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     with app.app_context():
