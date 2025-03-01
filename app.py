@@ -423,6 +423,11 @@ def marcar_notificacao_lida(id):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/documentacao')
+@login_required
+def documentacao():
+    return render_template('documentacao.html')
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
