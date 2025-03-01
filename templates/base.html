@@ -232,158 +232,149 @@
             }, 3000);
         }
 
-        // User Dropdown
-        const userMenuBtn = document.getElementById('userMenuBtn');
-        const userDropdown = document.getElementById('userDropdown');
-        
-        if (userMenuBtn) {
-            userMenuBtn.addEventListener('click', () => {
-                userDropdown.classList.toggle('hidden');
-            });
+        // Inicialização quando o documento estiver pronto
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const notificationsDropdown = document.getElementById('notificationsDropdown');
+            const notificationsList = document.getElementById('notificationsList');
+            const notificationCount = document.getElementById('notificationCount');
             
-            document.addEventListener('click', (e) => {
-                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                    userDropdown.classList.add('hidden');
-                }
-            });
-        }
+            if (userMenuBtn && userDropdown) {
+                // User Menu Toggle
+                userMenuBtn.addEventListener('click', () => {
+                    userDropdown.classList.toggle('hidden');
+                });
 
-        // Notificações
-        const notificationsBtn = document.getElementById('notificationsBtn');
-        const notificationsDropdown = document.getElementById('notificationsDropdown');
-        const notificationsList = document.getElementById('notificationsList');
-        const notificationCount = document.getElementById('notificationCount');
-        
-        if (notificationsBtn) {
-            let notifications = [];
-            let notificationPollInterval;
-
-            function startNotificationPolling() {
-                updateNotifications();
-                notificationPollInterval = setInterval(updateNotifications, 30000); // Poll every 30 seconds
+                // Fechar menu ao clicar fora
+                document.addEventListener('click', (e) => {
+                    if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
             }
 
-            function stopNotificationPolling() {
-                if (notificationPollInterval) {
-                    clearInterval(notificationPollInterval);
+            if (notificationsBtn) {
+                let notifications = [];
+                let notificationPollInterval;
+
+                function startNotificationPolling() {
+                    updateNotifications();
+                    notificationPollInterval = setInterval(updateNotifications, 30000);
                 }
-            }
 
-            // Start polling when document is ready
-            document.addEventListener('DOMContentLoaded', startNotificationPolling);
-            
-            // Stop polling when page is hidden
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    stopNotificationPolling();
-                } else {
-                    startNotificationPolling();
+                function stopNotificationPolling() {
+                    if (notificationPollInterval) {
+                        clearInterval(notificationPollInterval);
+                    }
                 }
-            });
 
-            function updateNotifications() {
-                fetch('/notificacoes/nao-lidas')
-                    .then(response => response.json())
-                    .then(data => {
-                        const previousCount = notifications.length;
-                        notifications = data;
-                        renderNotifications();
-                        
-                        // Show flash message for new notifications
-                        if (data.length > previousCount) {
-                            const newCount = data.length - previousCount;
-                            showFlash(`Você tem ${newCount} nova${newCount > 1 ? 's' : ''} notificação${newCount > 1 ? 'ões' : ''}!`, 'success');
-                        }
-                    });
-            }
+                // Iniciar polling de notificações
+                startNotificationPolling();
 
-            function renderNotifications() {
-                notificationsList.innerHTML = '';
-                
-                if (notifications.length === 0) {
-                    notificationsList.innerHTML = `
-                        <div class="p-4 text-center text-gray-400">
-                            <i class="fas fa-bell-slash mb-2 text-2xl"></i>
-                            <p>Nenhuma notificação</p>
-                        </div>
-                    `;
-                    notificationCount.classList.add('hidden');
-                } else {
-                    // Sort notifications by date, newest first
-                    notifications.sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao));
+                // Gerenciar polling quando a página está visível/oculta
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        stopNotificationPolling();
+                    } else {
+                        startNotificationPolling();
+                    }
+                });
 
-                    notifications.forEach(notif => {
-                        const item = document.createElement('div');
-                        item.className = 'notification-item group hover:bg-blue-900/20 transition-colors duration-200';
-                        
-                        // Format the date to a more readable format
-                        const date = new Date(notif.data_criacao);
-                        const formattedDate = new Intl.DateTimeFormat('pt-BR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        }).format(date);
-                        
-                        item.innerHTML = `
-                            <div class="flex items-start p-3">
-                                <div class="flex-shrink-0">
-                                    <i class="fas ${notif.tipo === 'resposta' ? 'fa-comment' : 'fa-check-circle'} 
-                                       text-blue-500 text-xl"></i>
-                                </div>
-                                <div class="ml-3 flex-grow">
-                                    <p class="text-sm text-white">${notif.mensagem}</p>
-                                    <p class="text-xs text-gray-400 mt-1">${formattedDate}</p>
-                                </div>
-                                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                    <button class="text-gray-400 hover:text-white" 
-                                            onclick="markAsRead(event, ${notif.id}, ${notif.chamado_id})">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                </div>
+                function updateNotifications() {
+                    fetch('/notificacoes/nao-lidas')
+                        .then(response => response.json())
+                        .then(data => {
+                            const previousCount = notifications.length;
+                            notifications = data;
+                            renderNotifications();
+                            
+                            if (data.length > previousCount) {
+                                const newCount = data.length - previousCount;
+                                showFlash(`Você tem ${newCount} nova${newCount > 1 ? 's' : ''} notificação${newCount > 1 ? 'ões' : ''}!`, 'success');
+                            }
+                        });
+                }
+
+                function renderNotifications() {
+                    notificationsList.innerHTML = '';
+                    
+                    if (notifications.length === 0) {
+                        notificationsList.innerHTML = `
+                            <div class="p-4 text-center text-gray-400">
+                                <i class="fas fa-bell-slash mb-2 text-2xl"></i>
+                                <p>Nenhuma notificação</p>
                             </div>
                         `;
+                        notificationCount.classList.add('hidden');
+                    } else {
+                        notifications.sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao));
+
+                        notifications.forEach(notif => {
+                            const date = new Date(notif.data_criacao);
+                            const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }).format(date);
+
+                            const item = document.createElement('div');
+                            item.className = 'notification-item group hover:bg-blue-900/20 transition-colors duration-200';
+                            item.innerHTML = `
+                                <div class="flex items-start p-3">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas ${notif.tipo === 'resposta' ? 'fa-comment' : notif.tipo === 'reprovacao' ? 'fa-times-circle' : 'fa-check-circle'} 
+                                           text-blue-500 text-xl"></i>
+                                    </div>
+                                    <div class="ml-3 flex-grow">
+                                        <p class="text-sm text-white">${notif.mensagem}</p>
+                                        <p class="text-xs text-gray-400 mt-1">${formattedDate}</p>
+                                    </div>
+                                    <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <button class="text-gray-400 hover:text-white" 
+                                                onclick="markAsRead(event, ${notif.id}, ${notif.chamado_id})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            notificationsList.appendChild(item);
+                        });
                         
-                        notificationsList.appendChild(item);
-                    });
+                        notificationCount.textContent = notifications.length;
+                        notificationCount.classList.remove('hidden');
+                    }
+                }
+
+                function markAsRead(event, notifId, chamadoId) {
+                    event.stopPropagation();
                     
-                    notificationCount.textContent = notifications.length;
-                    notificationCount.classList.remove('hidden');
+                    fetch(`/notificacoes/marcar-lida/${notifId}`)
+                        .then(() => {
+                            notifications = notifications.filter(n => n.id !== notifId);
+                            renderNotifications();
+                            showFlash('Notificação marcada como lida', 'success');
+                        });
                 }
+
+                // Toggle do dropdown de notificações
+                notificationsBtn.addEventListener('click', () => {
+                    notificationsDropdown.classList.toggle('show');
+                });
+
+                // Fechar dropdown ao clicar fora
+                document.addEventListener('click', (event) => {
+                    if (!notificationsBtn.contains(event.target) && 
+                        !notificationsDropdown.contains(event.target)) {
+                        notificationsDropdown.classList.remove('show');
+                    }
+                });
             }
-
-            function markAsRead(event, notifId, chamadoId) {
-                event.stopPropagation(); // Prevent notification click event
-                
-                fetch(`/notificacoes/marcar-lida/${notifId}`)
-                    .then(() => {
-                        // Remove notification from list
-                        notifications = notifications.filter(n => n.id !== notifId);
-                        renderNotifications();
-                        
-                        // Show success message
-                        showFlash('Notificação marcada como lida', 'success');
-                    });
-            }
-
-            // Close notifications dropdown when clicking outside
-            document.addEventListener('click', (event) => {
-                if (!event.target.closest('#notificationsBtn') && 
-                    !event.target.closest('#notificationsDropdown')) {
-                    notificationsDropdown.classList.remove('show');
-                }
-            });
-        }
-
-        // Flash messages do Flask
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    showFlash('{{ message }}', '{{ category }}');
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        });
     </script>
 </body>
 </html>
