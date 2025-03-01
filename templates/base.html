@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎧 Sistema de Chamados - Borgno Transportes</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233B82F6' d='M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 336H54c-3.314 0-6-2.678-6-5.992V117.992A5.993 5.993 0 0 1 54 112h404c3.314 0 6 2.678 6 5.992v276.016a5.993 5.993 0 0 1-6 6zM128 400c-44.112 0-80-35.888-80-80s35.888-80 80-80c31.909 0 59.382 18.673 72.313 45.646l-24.852 12.926c-8.56-16.477-25.895-27.572-45.461-27.572-28.276 0-51.2 22.924-51.2 51.2s22.924 51.2 51.2 51.2c19.566 0 36.901-11.095 45.461-27.572l24.852 12.926C187.382 381.327 159.909 400 128 400zm256 0c-44.112 0-80-35.888-80-80s35.888-80 80-80c31.909 0 59.382 18.673 72.313 45.646l-24.852 12.926c-8.56-16.477-25.895-27.572-45.461-27.572-28.276 0-51.2 22.924-51.2 51.2s22.924 51.2 51.2 51.2c19.566 0 36.901-11.095 45.461-27.572l24.852 12.926C443.382 381.327 415.909 400 384 400z'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233B82F6' d='M256 80C149.9 80 62.4 157.6 49.6 262c-1.2 9.8 6.3 18 16 18h38.8c8.1 0 14.9-5.7 16.5-13.7C133.8 186.7 189.5 128 256 128s122.2 58.7 135.1 138.3c1.6 8 8.4 13.7 16.5 13.7h38.8c9.7 0 17.2-8.2 16-18C449.6 157.6 362.1 80 256 80zM192 256c0-35.3 28.7-64 64-64s64 28.7 64 64v128c0 35.3-28.7 64-64 64s-64-28.7-64-64V256z'/></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -121,18 +121,16 @@
 
         .notification-badge {
             position: absolute;
-            top: -0.25rem;
-            right: -0.25rem;
-            background: var(--error);
+            top: -6px;
+            right: -6px;
+            background-color: #EF4444;
             color: white;
             border-radius: 9999px;
-            padding: 0.15rem 0.35rem;
-            font-size: 0.7rem;
-            font-weight: 600;
-            min-width: 1.25rem;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            min-width: 20px;
             text-align: center;
-            transform-origin: center;
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes pulse {
@@ -144,6 +142,57 @@
                 opacity: .9;
                 transform: scale(1.05);
             }
+        }
+
+        /* Ajustes para notificações */
+        .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background-color: #EF4444;
+            color: white;
+            border-radius: 9999px;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Z-index correto para elementos sobrepostos */
+        #userDropdown, #notificacoesDropdown {
+            z-index: 40;
+        }
+
+        #toast-container {
+            z-index: 50;
+        }
+
+        .modal {
+            z-index: 45;
+        }
+
+        /* Animações suaves */
+        .notification-enter {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .notification-enter-active {
+            transform: translateX(0);
+            opacity: 1;
+            transition: transform 300ms ease-out, opacity 300ms ease-out;
+        }
+
+        .notification-exit {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification-exit-active {
+            transform: translateX(100%);
+            opacity: 0;
+            transition: transform 300ms ease-in, opacity 300ms ease-in;
         }
     </style>
 </head>
@@ -179,12 +228,21 @@
                             <i class="fas fa-bell text-lg"></i>
                             <span id="notificationCount" class="notification-badge hidden">0</span>
                         </button>
-                        <div id="notificationsDropdown" class="notifications-dropdown" style="position: absolute; z-index: 9999; right: 0; top: 100%; margin-top: 0.5rem;">
+                        <div id="notificacoesDropdown" class="hidden absolute right-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
                             <div class="p-4 border-b border-gray-700">
-                                <h3 class="text-lg font-semibold text-white">Notificações</h3>
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold text-white flex items-center">
+                                        <i class="fas fa-bell text-blue-500 mr-2"></i>
+                                        Notificações
+                                    </h3>
+                                    <span id="notificationCount" class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full"></span>
+                                </div>
                             </div>
-                            <div id="notificationsList" class="max-h-96 overflow-y-auto">
-                                <!-- Notificações serão inseridas aqui via JavaScript -->
+                            <div class="max-h-96 overflow-y-auto" id="notificacoesList">
+                                <div class="p-4 text-center text-gray-400">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                    <p>Carregando notificações...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -238,8 +296,8 @@
             const userMenuBtn = document.getElementById('userMenuBtn');
             const userDropdown = document.getElementById('userDropdown');
             const notificationsBtn = document.getElementById('notificationsBtn');
-            const notificationsDropdown = document.getElementById('notificationsDropdown');
-            const notificationsList = document.getElementById('notificationsList');
+            const notificacoesDropdown = document.getElementById('notificacoesDropdown');
+            const notificacoesList = document.getElementById('notificacoesList');
             const notificationCount = document.getElementById('notificationCount');
             
             if (userMenuBtn && userDropdown) {
@@ -299,10 +357,10 @@
                 }
 
                 function renderNotifications() {
-                    notificationsList.innerHTML = '';
+                    notificacoesList.innerHTML = '';
                     
                     if (notifications.length === 0) {
-                        notificationsList.innerHTML = `
+                        notificacoesList.innerHTML = `
                             <div class="p-4 text-center text-gray-400">
                                 <i class="fas fa-bell-slash mb-2 text-2xl"></i>
                                 <p>Nenhuma notificação</p>
@@ -330,7 +388,7 @@
                                         <i class="fas ${notif.tipo === 'resposta' ? 'fa-comment' : notif.tipo === 'reprovacao' ? 'fa-times-circle' : 'fa-check-circle'} 
                                            text-blue-500 text-xl"></i>
                                     </div>
-                                    <div class="ml-3 flex-grow">
+                                    <div class="flex-1 min-w-0">
                                         <p class="text-sm text-white">${notif.mensagem}</p>
                                         <p class="text-xs text-gray-400 mt-1">${formattedDate}</p>
                                     </div>
@@ -343,7 +401,7 @@
                                 </div>
                             `;
                             
-                            notificationsList.appendChild(item);
+                            notificacoesList.appendChild(item);
                         });
                         
                         notificationCount.textContent = notifications.length;
@@ -364,79 +422,94 @@
 
                 // Toggle do dropdown de notificações
                 notificationsBtn.addEventListener('click', () => {
-                    notificationsDropdown.classList.toggle('show');
+                    notificacoesDropdown.classList.toggle('hidden');
                 });
 
                 // Fechar dropdown ao clicar fora
                 document.addEventListener('click', (event) => {
                     if (!notificationsBtn.contains(event.target) && 
-                        !notificationsDropdown.contains(event.target)) {
-                        notificationsDropdown.classList.remove('show');
+                        !notificacoesDropdown.contains(event.target)) {
+                        notificacoesDropdown.classList.add('hidden');
                     }
                 });
             }
         });
     </script>
     <script>
-        // Sistema de Notificações
-        document.addEventListener('DOMContentLoaded', function() {
-            const notificationsBtn = document.getElementById('notificationsBtn');
-            const notificationsDropdown = document.getElementById('notificationsDropdown');
-            const notificationsList = document.getElementById('notificationsList');
-            const notificationCount = document.getElementById('notificationCount');
+        // Função para formatar as notificações
+        function formatarNotificacao(notificacao) {
+            const icones = {
+                'novo': 'fa-plus-circle text-green-500',
+                'resposta': 'fa-reply text-blue-500',
+                'encerrado': 'fa-check-circle text-purple-500',
+                'reprovado': 'fa-times-circle text-red-500'
+            };
 
-            // Toggle dropdown ao clicar no botão
-            notificationsBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                notificationsDropdown.classList.toggle('hidden');
-                
-                // Carregar notificações
-                fetch('/get_notifications')
-                    .then(response => response.json())
-                    .then(data => {
-                        notificationsList.innerHTML = '';
-                        data.notifications.forEach(notif => {
-                            const notifElement = document.createElement('div');
-                            notifElement.className = 'p-4 border-b border-gray-700 hover:bg-gray-700';
-                            notifElement.innerHTML = `
-                                <p class="text-white">${notif.mensagem}</p>
-                                <small class="text-gray-400">${new Date(notif.data_criacao).toLocaleString()}</small>
-                            `;
-                            notificationsList.appendChild(notifElement);
-                        });
-                        
-                        // Atualizar contador
-                        const unreadCount = data.notifications.filter(n => !n.lida).length;
-                        if (unreadCount > 0) {
-                            notificationCount.textContent = unreadCount;
-                            notificationCount.classList.remove('hidden');
-                        } else {
-                            notificationCount.classList.add('hidden');
-                        }
-                    });
-            });
+            const icone = icones[notificacao.tipo] || 'fa-bell text-blue-500';
 
-            // Fechar dropdown ao clicar fora
-            document.addEventListener('click', function(e) {
-                if (!notificationsDropdown.contains(e.target) && e.target !== notificationsBtn) {
-                    notificationsDropdown.classList.add('hidden');
-                }
-            });
-
-            // Estilo do dropdown
-            notificationsDropdown.style.cssText = `
-                position: absolute;
-                top: 100%;
-                right: 0;
-                margin-top: 0.5rem;
-                min-width: 300px;
-                background-color: #1a1a1a;
-                border: 1px solid #333;
-                border-radius: 0.5rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                z-index: 9999;
+            return `
+                <div class="p-4 hover:bg-gray-700/50 transition-colors border-b border-gray-700 last:border-0">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icone} text-xl"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-white">${notificacao.mensagem}</p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                <i class="fas fa-clock mr-1"></i>
+                                ${notificacao.data}
+                            </p>
+                        </div>
+                        <button onclick="marcarComoLida(${notificacao.id})" 
+                                class="flex-shrink-0 text-gray-400 hover:text-white transition-colors">
+                            <i class="fas fa-check text-sm"></i>
+                        </button>
+                    </div>
+                </div>
             `;
-        });
+        }
+
+        // Função para atualizar a lista de notificações
+        function atualizarNotificacoes() {
+            fetch('/get_notifications')
+                .then(response => response.json())
+                .then(notificacoes => {
+                    const lista = document.getElementById('notificacoesList');
+                    const contador = document.getElementById('notificationCount');
+                    
+                    if (notificacoes.length === 0) {
+                        lista.innerHTML = `
+                            <div class="p-8 text-center text-gray-400">
+                                <i class="fas fa-bell-slash text-4xl mb-3"></i>
+                                <p>Nenhuma notificação no momento</p>
+                            </div>
+                        `;
+                        contador.textContent = '';
+                        contador.classList.add('hidden');
+                    } else {
+                        lista.innerHTML = notificacoes.map(formatarNotificacao).join('');
+                        contador.textContent = notificacoes.length;
+                        contador.classList.remove('hidden');
+                    }
+                });
+        }
+
+        // Função para marcar notificação como lida
+        function marcarComoLida(id) {
+            fetch(`/mark_notification_read/${id}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        atualizarNotificacoes();
+                    }
+                });
+        }
+
+        // Atualizar notificações a cada 30 segundos
+        setInterval(atualizarNotificacoes, 30000);
+        
+        // Atualizar notificações ao carregar a página
+        document.addEventListener('DOMContentLoaded', atualizarNotificacoes);
     </script>
     <script>
         // Monitor de Inatividade

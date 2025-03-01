@@ -4,93 +4,56 @@
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">
         <div class="bg-gray-800 rounded-lg shadow-lg p-6">
-            <h1 class="text-2xl font-bold text-white mb-6">Novo Chamado</h1>
+            <div class="flex items-center mb-6">
+                <i class="fas fa-plus-circle text-blue-500 text-2xl mr-3"></i>
+                <h1 class="text-2xl font-bold text-white">Novo Chamado</h1>
+            </div>
             
-            <form id="formChamado" method="POST">
-                <div class="space-y-6">
-                    <div>
-                        <label for="titulo" class="block text-sm font-medium text-gray-300">Título</label>
-                        <input type="text" id="titulo" name="titulo" required
-                               class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label for="descricao" class="block text-sm font-medium text-gray-300">Descrição</label>
-                        <textarea id="descricao" name="descricao" rows="6" required
-                                  class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label for="prioridade" class="block text-sm font-medium text-gray-300">Prioridade</label>
-                        <select id="prioridade" name="prioridade" required
-                                class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Selecione a prioridade</option>
-                            <option value="Crítico">Crítico</option>
-                            <option value="Não tão crítico">Não tão crítico</option>
-                            <option value="Tranquilo">Tranquilo</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex justify-end space-x-4">
-                        <a href="{{ url_for('meus_chamados') }}" 
-                           class="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors">
-                            Cancelar
-                        </a>
-                        <button type="submit" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-paper-plane mr-2"></i>Criar Chamado
-                        </button>
-                    </div>
+            <form id="formChamado" method="POST" class="space-y-6">
+                <div>
+                    <label for="titulo" class="block text-sm font-medium text-gray-300">Título</label>
+                    <input type="text" id="titulo" name="titulo" required
+                           class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white 
+                                  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                  placeholder-gray-400"
+                           placeholder="Digite um título para o chamado">
+                </div>
+                
+                <div>
+                    <label for="descricao" class="block text-sm font-medium text-gray-300">Descrição</label>
+                    <textarea id="descricao" name="descricao" rows="6" required
+                            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white 
+                                   shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                   placeholder-gray-400 resize-none"
+                            placeholder="Descreva detalhadamente o seu chamado"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ url_for('meus_chamados') }}" 
+                       class="px-4 py-2 text-gray-300 hover:text-white transition-colors">
+                        Cancelar
+                    </a>
+                    <button type="submit" 
+                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 
+                                   transition-colors flex items-center">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Enviar Chamado
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
 <script>
-document.getElementById('formChamado').addEventListener('submit', async function(e) {
-    e.preventDefault();
+document.getElementById('formChamado').addEventListener('submit', function(e) {
+    const titulo = document.getElementById('titulo').value.trim();
+    const descricao = document.getElementById('descricao').value.trim();
     
-    const titulo = document.getElementById('titulo').value;
-    const descricao = document.getElementById('descricao').value;
-    const prioridade = document.getElementById('prioridade').value;
-
-    try {
-        // Primeiro enviar o formulário para criar o chamado
-        const formData = new FormData(this);
-        const response = await fetch("{{ url_for('novo_chamado') }}", {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Se o chamado foi criado com sucesso, enviar o email
-            const emailResult = await enviarEmailChamado(
-                data.chamado_id, // Usar o ID real do chamado
-                titulo,
-                `Prioridade: ${prioridade}\n\n${descricao}`,
-                "{{ current_user.nome }}"
-            );
-
-            if (emailResult) {
-                console.log('Email enviado com sucesso');
-            } else {
-                console.error('Falha ao enviar email');
-            }
-            
-            // Redirecionar para a lista de chamados
-            window.location.href = "{{ url_for('meus_chamados') }}";
-        } else {
-            throw new Error('Erro ao criar chamado');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        alert('Ocorreu um erro ao criar o chamado. Por favor, tente novamente.');
+    if (!titulo || !descricao) {
+        e.preventDefault();
+        toastSystem.create('Por favor, preencha todos os campos.', 'error');
+        return;
     }
 });
 </script>

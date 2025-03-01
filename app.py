@@ -218,25 +218,41 @@ def novo_chamado():
     if request.method == 'POST':
         titulo = request.form.get('titulo')
         descricao = request.form.get('descricao')
-        prioridade = request.form.get('prioridade')
         
-        if not all([titulo, descricao, prioridade]):
+        if not titulo or not descricao:
             flash('Por favor, preencha todos os campos.', 'error')
             return redirect(url_for('novo_chamado'))
         
         chamado = Chamado(
             titulo=titulo,
             descricao=descricao,
-            prioridade=prioridade,
-            autor_id=current_user.id
+            autor_id=current_user.id,
+            status='Aberto'
         )
         
-        db.session.add(chamado)
-        db.session.commit()
-        
-        flash('Chamado criado com sucesso!', 'success')
-        return jsonify({'success': True, 'chamado_id': chamado.id})
-        
+        try:
+            db.session.add(chamado)
+            db.session.commit()
+            
+            # Criar notificação para administradores
+            admins = Usuario.query.filter_by(is_admin=True).all()
+            for admin in admins:
+                notificacao = Notificacao(
+                    usuario_id=admin.id,
+                    chamado_id=chamado.id,
+                    tipo='novo',
+                    mensagem=f'Novo chamado criado: {titulo}'
+                )
+                db.session.add(notificacao)
+            db.session.commit()
+            
+            flash('✨ Chamado criado com sucesso!', 'success')
+            return redirect(url_for('meus_chamados'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('❌ Erro ao criar chamado. Por favor, tente novamente.', 'error')
+            
     return render_template('novo_chamado.html')
 
 @app.route('/visualizar_chamado/<int:id>')
@@ -289,48 +305,61 @@ def responder_chamado(id):
 @admin_required
 def reprovar_chamado(id):
     chamado = Chamado.query.get_or_404(id)
-    data = request.get_json()
-    justificativa = data.get('justificativa')
+    justificativa = request.json.get('justificativa')
     
     if not justificativa:
-        return jsonify({'success': False, 'error': 'Justificativa é obrigatória'})
-    
-    chamado.status = 'Reprovado'
-    db.session.commit()
-    
-    # Criar notificação
-    notificacao = Notificacao(
-        tipo='reprovacao',
-        mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado. Justificativa: {justificativa}',
-        usuario_id=chamado.autor_id,
-        chamado_id=chamado.id
-    )
-    db.session.add(notificacao)
-    db.session.commit()
-    
-    flash('Chamado reprovado com sucesso!', 'success')
-    return jsonify({'success': True})
+        return jsonify({'error': 'Justificativa é obrigatória'}), 400
+        
+    try:
+        chamado.status = 'Reprovado'
+        chamado.justificativa = justificativa
+        db.session.commit()
+        
+        # Criar notificação para o autor
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=chamado.id,
+            tipo='reprovado',
+            mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado'
+        )
+        db.session.add(notificacao)
+        db.session.commit()
+        
+        flash('✅ Chamado reprovado com sucesso!', 'success')
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('❌ Erro ao reprovar chamado.', 'error')
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/encerrar_chamado/<int:id>', methods=['POST'])
 @login_required
 @admin_required
 def encerrar_chamado(id):
     chamado = Chamado.query.get_or_404(id)
-    chamado.status = 'Encerrado'
-    db.session.commit()
     
-    # Criar notificação
-    notificacao = Notificacao(
-        tipo='encerramento',
-        mensagem=f'Seu chamado "{chamado.titulo}" foi encerrado.',
-        usuario_id=chamado.autor_id,
-        chamado_id=chamado.id
-    )
-    db.session.add(notificacao)
-    db.session.commit()
-    
-    flash('Chamado encerrado com sucesso!', 'success')
-    return jsonify({'success': True})
+    try:
+        chamado.status = 'Encerrado'
+        db.session.commit()
+        
+        # Criar notificação para o autor
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=chamado.id,
+            tipo='encerrado',
+            mensagem=f'Seu chamado "{chamado.titulo}" foi encerrado'
+        )
+        db.session.add(notificacao)
+        db.session.commit()
+        
+        flash('✅ Chamado encerrado com sucesso!', 'success')
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('❌ Erro ao encerrar chamado.', 'error')
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/listar_chamados/<status>')
 @login_required
@@ -428,6 +457,33 @@ def redefinir_senha(token):
         return redirect(url_for('login'))
     
     return render_template('redefinir_senha.html')
+
+@app.route('/get_notifications')
+@login_required
+def get_notifications():
+    """Retorna as notificações não lidas do usuário atual"""
+    notificacoes = Notificacao.query.filter_by(
+        usuario_id=current_user.id,
+        lida=False
+    ).order_by(Notificacao.data_criacao.desc()).all()
+    
+    return jsonify([{
+        'id': n.id,
+        'mensagem': n.mensagem,
+        'tipo': n.tipo,
+        'data': n.data_criacao.strftime('%d/%m/%Y %H:%M')
+    } for n in notificacoes])
+
+@app.route('/mark_notification_read/<int:id>', methods=['POST'])
+@login_required
+def mark_notification_read(id):
+    """Marca uma notificação como lida"""
+    notificacao = Notificacao.query.get_or_404(id)
+    if notificacao.usuario_id == current_user.id:
+        notificacao.lida = True
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False}), 403
 
 @app.route('/notificacoes/nao-lidas')
 @login_required

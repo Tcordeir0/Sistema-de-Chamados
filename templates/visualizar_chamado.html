@@ -172,11 +172,11 @@ function reprovarChamado() {
             enviarEmailStatus(
                 '{{ chamado.id }}',
                 '{{ chamado.titulo }}',
-                '{{ chamado.autor.email }}',  // Usando email do autor
+                '{{ chamado.autor.email }}',
                 'Reprovado',
                 justificativa
             ).then(() => {
-                window.location.reload();
+                window.location.href = "{{ url_for('dashboard') }}";
             });
         }
     });
@@ -225,7 +225,7 @@ function confirmarEncerramento(chamadoId) {
                 '{{ chamado.autor.email }}',
                 'Encerrado'
             ).then(() => {
-                window.location.reload();
+                window.location.href = "{{ url_for('dashboard') }}";
             });
         }
     });
