@@ -159,13 +159,14 @@ function reprovarChamado() {
         if (data.success) {
             // Enviar email de reprovação
             enviarEmailStatus(
-                chamadoIdParaReprovar,
+                '{{ chamado.id }}',
                 '{{ chamado.titulo }}',
-                '{{ chamado.autor.nome }}',
+                '{{ chamado.autor.email }}',  // Usando email do autor
                 'Reprovado',
                 justificativa
-            );
-            window.location.reload();
+            ).then(() => {
+                window.location.reload();
+            });
         }
     });
 }
@@ -180,12 +181,72 @@ function encerrarChamado(chamadoId) {
             if (data.success) {
                 // Enviar email de encerramento
                 enviarEmailStatus(
-                    chamadoId,
+                    '{{ chamado.id }}',
                     '{{ chamado.titulo }}',
-                    '{{ chamado.autor.nome }}',
+                    '{{ chamado.autor.email }}',  // Usando email do autor
                     'Encerrado'
-                );
+                ).then(() => {
+                    window.location.reload();
+                });
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.emailjs.com/sdk/2.3.2/email.min.js"></script>
+<script src="{{ url_for('static', filename='js/email.js') }}"></script>
+<script>
+function reprovarChamado() {
+    const justificativa = document.getElementById('justificativa').value.trim();
+    if (!justificativa) {
+        alert('Por favor, forneça uma justificativa para a reprovação.');
+        return;
+    }
+
+    fetch(`/reprovar_chamado/${chamadoIdParaReprovar}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ justificativa: justificativa })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Enviar email de reprovação
+            enviarEmailStatus(
+                '{{ chamado.id }}',
+                '{{ chamado.titulo }}',
+                '{{ chamado.autor.email }}',  // Usando email do autor
+                'Reprovado',
+                justificativa
+            ).then(() => {
                 window.location.reload();
+            });
+        }
+    });
+}
+
+function encerrarChamado(chamadoId) {
+    if (confirm('Tem certeza que deseja encerrar este chamado?')) {
+        fetch(`/encerrar_chamado/${chamadoId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Enviar email de encerramento
+                enviarEmailStatus(
+                    '{{ chamado.id }}',
+                    '{{ chamado.titulo }}',
+                    '{{ chamado.autor.email }}',  // Usando email do autor
+                    'Encerrado'
+                ).then(() => {
+                    window.location.reload();
+                });
             }
         });
     }

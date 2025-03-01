@@ -377,5 +377,66 @@
             }
         });
     </script>
+    <script>
+        // Sistema de Notificações
+        document.addEventListener('DOMContentLoaded', function() {
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const notificationsDropdown = document.getElementById('notificationsDropdown');
+            const notificationsList = document.getElementById('notificationsList');
+            const notificationCount = document.getElementById('notificationCount');
+
+            // Toggle dropdown ao clicar no botão
+            notificationsBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationsDropdown.classList.toggle('hidden');
+                
+                // Carregar notificações
+                fetch('/get_notifications')
+                    .then(response => response.json())
+                    .then(data => {
+                        notificationsList.innerHTML = '';
+                        data.notifications.forEach(notif => {
+                            const notifElement = document.createElement('div');
+                            notifElement.className = 'p-4 border-b border-gray-700 hover:bg-gray-700';
+                            notifElement.innerHTML = `
+                                <p class="text-white">${notif.mensagem}</p>
+                                <small class="text-gray-400">${new Date(notif.data_criacao).toLocaleString()}</small>
+                            `;
+                            notificationsList.appendChild(notifElement);
+                        });
+                        
+                        // Atualizar contador
+                        const unreadCount = data.notifications.filter(n => !n.lida).length;
+                        if (unreadCount > 0) {
+                            notificationCount.textContent = unreadCount;
+                            notificationCount.classList.remove('hidden');
+                        } else {
+                            notificationCount.classList.add('hidden');
+                        }
+                    });
+            });
+
+            // Fechar dropdown ao clicar fora
+            document.addEventListener('click', function(e) {
+                if (!notificationsDropdown.contains(e.target) && e.target !== notificationsBtn) {
+                    notificationsDropdown.classList.add('hidden');
+                }
+            });
+
+            // Estilo do dropdown
+            notificationsDropdown.style.cssText = `
+                position: absolute;
+                top: 100%;
+                right: 0;
+                margin-top: 0.5rem;
+                min-width: 300px;
+                background-color: #1a1a1a;
+                border: 1px solid #333;
+                border-radius: 0.5rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                z-index: 9999;
+            `;
+        });
+    </script>
 </body>
 </html>

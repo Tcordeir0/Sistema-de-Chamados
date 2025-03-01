@@ -26,9 +26,9 @@ ${descricao}
             });
     };
 
-    window.enviarEmailStatus = function(chamadoId, titulo, autor, status, justificativa = '') {
+    window.enviarEmailStatus = function(chamadoId, titulo, emailAutor, status, justificativa = '') {
         const templateParams = {
-            to_name: autor,
+            to_name: "Usuário",
             from_name: "Equipe de Suporte",
             message: `
 Atualização do Chamado #${chamadoId}
@@ -37,7 +37,7 @@ Título: ${titulo}
 Status: ${status}
 ${justificativa ? `\nJustificativa: ${justificativa}` : ''}
 `,
-            to_email: 'chamados@borgnotransportes.com.br'
+            to_email: emailAutor  // Enviando para o email do autor
         };
 
         return emailjs.send('service_e2brzs9', 'template_fph5zj2', templateParams)

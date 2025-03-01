@@ -432,6 +432,33 @@ def marcar_notificacao_lida(id):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/get_notifications')
+@login_required
+def get_notifications():
+    notificacoes = Notificacao.query.filter_by(usuario_id=current_user.id)\
+        .order_by(Notificacao.data_criacao.desc())\
+        .limit(10)\
+        .all()
+    
+    return jsonify({
+        'notifications': [{
+            'id': n.id,
+            'mensagem': n.mensagem,
+            'tipo': n.tipo,
+            'lida': n.lida,
+            'data_criacao': n.data_criacao.isoformat()
+        } for n in notificacoes]
+    })
+
+@app.route('/mark_notification_read/<int:id>', methods=['POST'])
+@login_required
+def mark_notification_read(id):
+    notificacao = Notificacao.query.get_or_404(id)
+    if notificacao.usuario_id == current_user.id:
+        notificacao.lida = True
+        db.session.commit()
+    return jsonify({'success': True})
+
 @app.route('/documentacao')
 @login_required
 def documentacao():
