@@ -1,12 +1,29 @@
-# Arquivos de ambiente e configuração
+# Arquivos de ambiente e chaves
 .env
+.key
 *.key
-__pycache__/
-*.pyc
+secure_config.py
 
-# Arquivos de banco de dados
+# Scripts de inicialização com dados sensíveis
+create_admin.py
+reset_admin.py
+recreate_db.py
+init_db.py
+
+# Banco de dados
 *.db
+*.sqlite
 *.sqlite3
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambiente virtual
+venv/
+env/
+ENV/
 
 # Logs
 *.log
@@ -15,15 +32,8 @@ __pycache__/
 .vscode/
 .idea/
 *.swp
+*.swo
 
-# Arquivos de sistema
+# Arquivos do sistema
 .DS_Store
 Thumbs.db
-
-# Diretório de ambiente virtual
-venv/
-env/
-.env/
-
-# Arquivos de dependências
-node_modules/
