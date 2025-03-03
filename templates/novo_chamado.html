@@ -1,60 +1,65 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-2xl mx-auto">
-        <div class="bg-gray-800 rounded-lg shadow-lg p-6">
-            <div class="flex items-center mb-6">
-                <i class="fas fa-plus-circle text-blue-500 text-2xl mr-3"></i>
-                <h1 class="text-2xl font-bold text-white">Novo Chamado</h1>
+<div class="min-h-screen bg-gray-900 py-6">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-white">Novo Chamado</h2>
+                    <a href="{{ url_for('meus_chamados') }}" 
+                       class="inline-flex items-center px-3 py-1.5 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 focus:outline-none">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Voltar
+                    </a>
+                </div>
             </div>
-            
-            <form id="formChamado" method="POST" class="space-y-6">
+
+            <form method="POST" action="{{ url_for('novo_chamado') }}" class="px-6 py-4 space-y-6">
                 <div>
-                    <label for="titulo" class="block text-sm font-medium text-gray-300">Título</label>
-                    <input type="text" id="titulo" name="titulo" required
-                           class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white 
-                                  shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                  placeholder-gray-400"
+                    <label for="titulo" class="block text-sm font-medium text-gray-300">
+                        Título
+                    </label>
+                    <input type="text" name="titulo" id="titulo" required
+                           class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                            placeholder="Digite um título para o chamado">
                 </div>
-                
+
                 <div>
-                    <label for="descricao" class="block text-sm font-medium text-gray-300">Descrição</label>
-                    <textarea id="descricao" name="descricao" rows="6" required
-                            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white 
-                                   shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                   placeholder-gray-400 resize-none"
-                            placeholder="Descreva detalhadamente o seu chamado"></textarea>
+                    <label for="criticidade" class="block text-sm font-medium text-gray-300">
+                        Criticidade
+                    </label>
+                    <select name="criticidade" id="criticidade" required
+                            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="" disabled selected>Selecione a criticidade</option>
+                        <option value="Baixa" class="text-green-500">Baixa - Pode aguardar</option>
+                        <option value="Média" class="text-yellow-500">Média - Atenção necessária</option>
+                        <option value="Alta" class="text-red-500">Alta - Urgente</option>
+                        <option value="Crítica" class="text-red-600">Crítica - Emergência</option>
+                    </select>
                 </div>
 
-                <div class="flex justify-end space-x-3">
-                    <a href="{{ url_for('meus_chamados') }}" 
-                       class="px-4 py-2 text-gray-300 hover:text-white transition-colors">
-                        Cancelar
-                    </a>
-                    <button type="submit" 
-                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 
-                                   transition-colors flex items-center">
+                <div>
+                    <label for="descricao" class="block text-sm font-medium text-gray-300">
+                        Descrição
+                    </label>
+                    <textarea name="descricao" id="descricao" rows="6" required
+                              class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                              placeholder="Descreva detalhadamente seu problema ou solicitação"></textarea>
+                </div>
+
+                <div class="flex justify-end pt-4">
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <i class="fas fa-paper-plane mr-2"></i>
-                        Enviar Chamado
+                        Criar Chamado
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<script>
-document.getElementById('formChamado').addEventListener('submit', function(e) {
-    const titulo = document.getElementById('titulo').value.trim();
-    const descricao = document.getElementById('descricao').value.trim();
-    
-    if (!titulo || !descricao) {
-        e.preventDefault();
-        toastSystem.create('Por favor, preencha todos os campos.', 'error');
-        return;
-    }
-});
-</script>
 {% endblock %}

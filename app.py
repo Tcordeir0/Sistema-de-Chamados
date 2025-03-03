@@ -5,55 +5,80 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
-from flask_mail import Mail, Message
-import secrets
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import secrets
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(32)  # Chave secreta forte e aleatória
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Tcorde0%40@localhost:3306/sistema_chamados'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sistema_chamados.db'  # Usando SQLite
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=1)  # Sessão expira em 1 minuto
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Sessão expira em 30 minutos
 app.config['SESSION_COOKIE_SECURE'] = True  # Cookies só via HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Cookies não acessíveis via JavaScript
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção contra CSRF
 
+# Configuração do Flask-Mail para Outlook
+app.config['MAIL_SERVER'] = 'smtp-mail.outlook.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'chamados@borgnotransportes.com.br'
+app.config['MAIL_PASSWORD'] = 'Q&394922249217ad'
+mail = Mail(app)
+
 # Configuração do Talisman (Segurança HTTPS e Headers)
 talisman = Talisman(
     app,
-    force_https=True,
-    strict_transport_security=True,
-    session_cookie_secure=True,
+    force_https=False,  # Desabilitado para desenvolvimento local
+    strict_transport_security=False,  # Desabilitado para desenvolvimento local
+    session_cookie_secure=False,  # Desabilitado para desenvolvimento local
     content_security_policy={
-        'default-src': ["'self'", 'https:', "'unsafe-inline'", "'unsafe-eval'"],
+        'default-src': ["'self'", 'https:', "'unsafe-inline'", "'unsafe-eval'", 'cdn.tailwindcss.com', 'cdnjs.cloudflare.com'],
         'img-src': ["'self'", 'https:', 'data:'],
-        'font-src': ["'self'", 'https:', 'data:'],
+        'font-src': ["'self'", 'https:', 'data:', 'cdnjs.cloudflare.com'],
+        'style-src': ["'self'", "'unsafe-inline'", 'https:', 'cdn.tailwindcss.com'],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.tailwindcss.com', 'cdnjs.cloudflare.com']
     }
 )
 
-# Configuração do Rate Limiter
+# Configuração do Flask-Limiter
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
 )
+
+# Configurar exceções para rotas específicas
+@limiter.request_filter
+def ip_whitelist():
+    return request.path in ['/static/', '/favicon.ico']
 
 # Configuração do fuso horário
 TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
-# Configuração do email
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'seu-email@gmail.com'  # Substitua pelo seu email
-app.config['MAIL_PASSWORD'] = 'sua-senha-app'  # Substitua pela sua senha de app
+# Filtro para formatar data e hora
+@app.template_filter('datetime')
+def format_datetime(value):
+    if isinstance(value, str):
+        value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+    return value.strftime('%d/%m/%Y %H:%M')
 
 db = SQLAlchemy(app)
-login_manager = LoginManager(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 login_manager.login_view = 'login'
-mail = Mail(app)
+
+# Context processor para notificações
+@app.context_processor
+def utility_processor():
+    def get_user_notifications():
+        if current_user.is_authenticated:
+            return Notificacao.query.filter_by(usuario_id=current_user.id, lida=False).all()
+        return []
+    return dict(notifications=get_user_notifications)
 
 class Usuario(UserMixin, db.Model):
     """Modelo para armazenar informações dos usuários do sistema"""
@@ -77,19 +102,18 @@ class Chamado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(100), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), default='Aberto')  # Valores: 'Aberto', 'Encerrado', 'Reprovado'
-    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
-    data_atualizacao = db.Column(db.DateTime, onupdate=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
-    prioridade = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), default='Aberto')
+    criticidade = db.Column(db.String(20), default='Média')
+    data_criacao = db.Column(db.DateTime, default=datetime.now)
     autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    respostas = db.relationship('Resposta', backref='chamado', lazy=True, cascade='all, delete-orphan')
+    respostas = db.relationship('Resposta', backref='chamado', lazy=True)
 
 class Resposta(db.Model):
     """Modelo para armazenar as respostas dos chamados"""
     __tablename__ = 'resposta'
     id = db.Column(db.Integer, primary_key=True)
     conteudo = db.Column(db.Text, nullable=False)
-    data_resposta = db.Column(db.DateTime, default=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
+    data_resposta = db.Column(db.DateTime, default=datetime.now)
     chamado_id = db.Column(db.Integer, db.ForeignKey('chamado.id'), nullable=False)
     autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
 
@@ -102,7 +126,7 @@ class Notificacao(db.Model):
     tipo = db.Column(db.String(50), nullable=False)  # 'resposta' ou 'resolucao'
     mensagem = db.Column(db.String(200), nullable=False)
     lida = db.Column(db.Boolean, default=False)
-    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(TIMEZONE).replace(tzinfo=None))
+    data_criacao = db.Column(db.DateTime, default=datetime.now)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -111,10 +135,24 @@ def load_user(user_id):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.has_role('ADM'):
-            return jsonify({'error': 'Não autorizado'}), 403
+        if not current_user.is_admin:
+            flash('Acesso negado. Esta função é restrita a administradores.', 'error')
+            return redirect(url_for('home'))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+@app.errorhandler(403)
+def forbidden(e):
+    flash('Você não tem permissão para acessar esta página.', 'error')
+    return redirect(url_for('home'))
 
 @app.route('/')
 def index():
@@ -157,10 +195,10 @@ def registro():
         senha = request.form.get('senha')
         
         if Usuario.query.filter_by(email=email).first():
-            flash('Email já cadastrado.')
+            flash('Email já cadastrado.', 'error')
             return redirect(url_for('registro'))
         
-        hash_senha = generate_password_hash(senha, method='scrypt')
+        hash_senha = generate_password_hash(senha, method='sha256')
         novo_usuario = Usuario(nome=nome, email=email, senha=hash_senha, is_admin=False)
         
         try:
@@ -175,7 +213,7 @@ def registro():
     return render_template('registro.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")  # Limite de 5 tentativas por minuto
+@limiter.limit("10 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -185,21 +223,26 @@ def login():
         senha = request.form.get('senha')
         
         usuario = Usuario.query.filter_by(email=email).first()
+        
         if usuario and check_password_hash(usuario.senha, senha):
-            login_user(usuario, remember=True)
-            session.permanent = True  # Ativa a expiração da sessão
+            login_user(usuario)
+            flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('home'))
-        flash('Email ou senha inválidos!', 'error')
+        else:
+            flash('Email ou senha inválidos. Por favor, tente novamente.', 'error')
+    
     return render_template('login.html')
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
+    flash('Você foi desconectado com sucesso!', 'success')
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required
+@admin_required
 def dashboard():
     if not current_user.has_role('ADM'):
         return redirect(url_for('meus_chamados'))
@@ -209,50 +252,78 @@ def dashboard():
 @app.route('/meus_chamados')
 @login_required
 def meus_chamados():
-    chamados = Chamado.query.filter_by(autor=current_user).all()
-    return render_template('lista_chamados.html', chamados=chamados, titulo='Meus Chamados')
+    if current_user.has_role('ADM'):
+        chamados = Chamado.query.order_by(Chamado.data_criacao.desc()).all()
+    else:
+        chamados = Chamado.query.filter_by(autor_id=current_user.id).order_by(Chamado.data_criacao.desc()).all()
+    return render_template('meus_chamados.html', chamados=chamados)
 
-@app.route('/novo_chamado', methods=['GET', 'POST'])
+@app.route('/novo-chamado', methods=['GET', 'POST'])
 @login_required
 def novo_chamado():
     if request.method == 'POST':
         titulo = request.form.get('titulo')
         descricao = request.form.get('descricao')
+        criticidade = request.form.get('criticidade')
         
         if not titulo or not descricao:
-            flash('Por favor, preencha todos os campos.', 'error')
+            flash('Por favor, preencha todos os campos obrigatórios.', 'error')
             return redirect(url_for('novo_chamado'))
         
-        chamado = Chamado(
+        novo = Chamado(
             titulo=titulo,
             descricao=descricao,
-            autor_id=current_user.id,
-            status='Aberto'
+            criticidade=criticidade,
+            autor_id=current_user.id
         )
         
         try:
-            db.session.add(chamado)
+            db.session.add(novo)
             db.session.commit()
             
             # Criar notificação para administradores
             admins = Usuario.query.filter_by(is_admin=True).all()
             for admin in admins:
-                notificacao = Notificacao(
+                notif = Notificacao(
                     usuario_id=admin.id,
-                    chamado_id=chamado.id,
+                    chamado_id=novo.id,
                     tipo='novo',
                     mensagem=f'Novo chamado criado: {titulo}'
                 )
-                db.session.add(notificacao)
-            db.session.commit()
+                db.session.add(notif)
             
-            flash('✨ Chamado criado com sucesso!', 'success')
+            # Enviar e-mail para o suporte
+            msg = Message(
+                subject=f'Novo Chamado: {titulo}',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=['suporte@borgnotransportes.com.br']
+            )
+            msg.body = f'''
+Novo chamado criado por {current_user.nome}
+
+Título: {titulo}
+Criticidade: {criticidade}
+Status: Aberto
+
+Descrição:
+{descricao}
+
+Para responder a este chamado, acesse o sistema: http://localhost:5000/visualizar-chamado/{novo.id}
+
+--
+Sistema de Chamados - Borgno Transportes
+'''
+            mail.send(msg)
+            
+            db.session.commit()
+            flash('Chamado criado com sucesso!', 'success')
             return redirect(url_for('meus_chamados'))
             
         except Exception as e:
             db.session.rollback()
-            flash('❌ Erro ao criar chamado. Por favor, tente novamente.', 'error')
-            
+            flash('Erro ao criar chamado. Por favor, tente novamente.', 'error')
+            return redirect(url_for('novo_chamado'))
+    
     return render_template('novo_chamado.html')
 
 @app.route('/visualizar_chamado/<int:id>')
@@ -275,29 +346,69 @@ def responder_chamado(id):
     resposta = request.form.get('resposta')
     
     if not resposta:
-        flash('A resposta não pode estar vazia.', 'error')
+        flash('Por favor, digite uma resposta antes de enviar.', 'error')
         return redirect(url_for('visualizar_chamado', id=id))
     
-    nova_resposta = Resposta(
-        conteudo=resposta,
-        chamado_id=id,
-        autor_id=current_user.id
-    )
-    
-    db.session.add(nova_resposta)
-    
-    # Criar notificação para o autor do chamado
-    if chamado.autor_id != current_user.id:
-        notificacao = Notificacao(
+    try:
+        nova_resposta = Resposta(
+            conteudo=resposta,
+            chamado_id=chamado.id,
+            autor_id=current_user.id
+        )
+        db.session.add(nova_resposta)
+        
+        # Criar notificação para o autor do chamado
+        notif = Notificacao(
             usuario_id=chamado.autor_id,
             chamado_id=chamado.id,
             tipo='resposta',
             mensagem=f'Nova resposta no chamado: {chamado.titulo}'
         )
-        db.session.add(notificacao)
+        db.session.add(notif)
+        
+        db.session.commit()
+        flash('Resposta enviada com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao enviar resposta. Por favor, tente novamente.', 'error')
     
-    db.session.commit()
-    flash('Resposta enviada com sucesso!', 'success')
+    return redirect(url_for('visualizar_chamado', id=id))
+
+@app.route('/encerrar_chamado/<int:id>', methods=['POST'])
+@login_required
+def encerrar_chamado(id):
+    chamado = Chamado.query.get_or_404(id)
+    
+    if not current_user.is_admin and chamado.autor_id != current_user.id:
+        flash('Você não tem permissão para encerrar este chamado.', 'error')
+        return redirect(url_for('visualizar_chamado', id=id))
+    
+    try:
+        chamado.status = 'Encerrado'
+        
+        # Criar notificação para todos os envolvidos
+        envolvidos = set([chamado.autor_id])
+        for resposta in chamado.respostas:
+            envolvidos.add(resposta.autor_id)
+        
+        for usuario_id in envolvidos:
+            if usuario_id != current_user.id:
+                notif = Notificacao(
+                    usuario_id=usuario_id,
+                    chamado_id=chamado.id,
+                    tipo='encerramento',
+                    mensagem=f'O chamado "{chamado.titulo}" foi encerrado'
+                )
+                db.session.add(notif)
+        
+        db.session.commit()
+        flash('Chamado encerrado com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao encerrar chamado. Por favor, tente novamente.', 'error')
+    
     return redirect(url_for('visualizar_chamado', id=id))
 
 @app.route('/reprovar_chamado/<int:id>', methods=['POST'])
@@ -305,61 +416,40 @@ def responder_chamado(id):
 @admin_required
 def reprovar_chamado(id):
     chamado = Chamado.query.get_or_404(id)
-    justificativa = request.json.get('justificativa')
+    motivo = request.form.get('motivo')
     
-    if not justificativa:
-        return jsonify({'error': 'Justificativa é obrigatória'}), 400
-        
+    if not motivo:
+        flash('Por favor, informe o motivo da reprovação.', 'error')
+        return redirect(url_for('visualizar_chamado', id=id))
+    
     try:
         chamado.status = 'Reprovado'
-        chamado.justificativa = justificativa
-        db.session.commit()
         
-        # Criar notificação para o autor
-        notificacao = Notificacao(
+        # Criar notificação de reprovação
+        notif = Notificacao(
             usuario_id=chamado.autor_id,
             chamado_id=chamado.id,
-            tipo='reprovado',
-            mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado'
+            tipo='reprovacao',
+            mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado. Motivo: {motivo}'
         )
-        db.session.add(notificacao)
-        db.session.commit()
+        db.session.add(notif)
         
-        flash('✅ Chamado reprovado com sucesso!', 'success')
-        return jsonify({'success': True})
+        # Adicionar resposta com o motivo
+        resposta = Resposta(
+            conteudo=f'Chamado reprovado. Motivo: {motivo}',
+            chamado_id=chamado.id,
+            autor_id=current_user.id
+        )
+        db.session.add(resposta)
+        
+        db.session.commit()
+        flash('Chamado reprovado com sucesso.', 'success')
         
     except Exception as e:
         db.session.rollback()
-        flash('❌ Erro ao reprovar chamado.', 'error')
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/encerrar_chamado/<int:id>', methods=['POST'])
-@login_required
-@admin_required
-def encerrar_chamado(id):
-    chamado = Chamado.query.get_or_404(id)
+        flash('Erro ao reprovar chamado. Por favor, tente novamente.', 'error')
     
-    try:
-        chamado.status = 'Encerrado'
-        db.session.commit()
-        
-        # Criar notificação para o autor
-        notificacao = Notificacao(
-            usuario_id=chamado.autor_id,
-            chamado_id=chamado.id,
-            tipo='encerrado',
-            mensagem=f'Seu chamado "{chamado.titulo}" foi encerrado'
-        )
-        db.session.add(notificacao)
-        db.session.commit()
-        
-        flash('✅ Chamado encerrado com sucesso!', 'success')
-        return jsonify({'success': True})
-        
-    except Exception as e:
-        db.session.rollback()
-        flash('❌ Erro ao encerrar chamado.', 'error')
-        return jsonify({'error': str(e)}), 500
+    return redirect(url_for('visualizar_chamado', id=id))
 
 @app.route('/listar_chamados/<status>')
 @login_required
@@ -382,61 +472,78 @@ def listar_chamados_por_status(status):
                          chamados_encerrados=Chamado.query.filter_by(status='Encerrado').count(),
                          chamados_reprovados=Chamado.query.filter_by(status='Reprovado').count())
 
-@app.route('/enviar_email', methods=['POST'])
-def enviar_email():
-    data = request.json
+@app.route('/get-notifications')
+@login_required
+def get_notifications():
+    notifications = Notificacao.query.filter_by(
+        usuario_id=current_user.id,
+        lida=False
+    ).order_by(Notificacao.data_criacao.desc()).all()
+    
     return jsonify({
-        'status': 'success',
-        'message': 'Email enviado com sucesso via EmailJS'
+        'notifications': [{
+            'id': notif.id,
+            'mensagem': notif.mensagem,
+            'tipo': notif.tipo,
+            'chamado_id': notif.chamado_id,
+            'data_criacao': notif.data_criacao.strftime('%Y-%m-%d %H:%M:%S')
+        } for notif in notifications]
     })
 
-@app.route('/teste_email')
-def teste_email():
-    """Rota para testar o envio de email"""
-    try:
-        mensagem = """
-        <h3>Detalhes do Teste:</h3>
-        <p><strong>Tipo:</strong> Teste de Configuração</p>
-        <p><strong>Data:</strong> Teste realizado em {}</p>
-        <p>Este é um email de teste para verificar se a configuração do sistema de emails está funcionando corretamente.</p>
-        """.format(datetime.now(TIMEZONE).strftime('%d/%m/%Y %H:%M:%S'))
+@app.route('/mark-notification-read/<int:id>', methods=['POST'])
+@login_required
+def mark_notification_read(id):
+    notif = Notificacao.query.get_or_404(id)
+    if notif.usuario_id != current_user.id:
+        return jsonify({'error': 'Você não tem permissão para marcar esta notificação como lida'}), 403
+    notif.lida = True
+    db.session.commit()
+    return jsonify({'success': True})
 
-        sucesso = True
-
-        if sucesso:
-            flash('Email de teste enviado com sucesso!', 'success')
-        else:
-            flash('Erro ao enviar email de teste.', 'error')
-
-        return redirect(url_for('index'))
-    except Exception as e:
-        flash(f'Erro: {str(e)}', 'error')
-        return redirect(url_for('index'))
+@app.route('/documentacao')
+@login_required
+def documentacao():
+    return render_template('documentacao.html')
 
 @app.route('/esqueci-senha', methods=['GET', 'POST'])
-@limiter.limit("3 per hour")  # Limite de 3 tentativas por hora
 def esqueci_senha():
     if request.method == 'POST':
         email = request.form.get('email')
         usuario = Usuario.query.filter_by(email=email).first()
         
-        if usuario:
-            token = secrets.token_urlsafe(32)
-            usuario.reset_token = token
-            db.session.commit()
+        if not usuario:
+            flash('Não encontramos uma conta com este e-mail.', 'error')
+            return redirect(url_for('esqueci_senha'))
             
-            # Envio do email com token seguro
-            reset_url = url_for('redefinir_senha', token=token, _external=True)
-            msg = Message('Redefinição de Senha',
-                        sender='seu-email@gmail.com',
-                        recipients=[email])
-            msg.body = f'Para redefinir sua senha, acesse o link: {reset_url}'
+        # Gerar token de redefinição
+        token = secrets.token_urlsafe(32)
+        usuario.reset_token = token
+        db.session.commit()
+        
+        # Enviar e-mail de redefinição
+        msg = Message(
+            'Redefinição de Senha - Sistema de Chamados',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.body = f'''
+Para redefinir sua senha, clique no link abaixo:
+
+http://localhost:5000/redefinir-senha/{token}
+
+Se você não solicitou a redefinição de senha, ignore este e-mail.
+
+--
+Sistema de Chamados - Borgno Transportes
+'''
+        try:
             mail.send(msg)
-            
-            flash('Email de redefinição enviado!', 'success')
-            return redirect(url_for('login'))
-            
-        flash('Email não encontrado!', 'error')
+            flash('E-mail de redefinição de senha enviado! Verifique sua caixa de entrada.', 'success')
+        except Exception as e:
+            flash('Erro ao enviar e-mail. Por favor, tente novamente mais tarde.', 'error')
+        
+        return redirect(url_for('login'))
+    
     return render_template('esqueci_senha.html')
 
 @app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
@@ -448,105 +555,25 @@ def redefinir_senha(token):
         return redirect(url_for('login'))
     
     if request.method == 'POST':
-        nova_senha = request.form.get('senha')
-        usuario.senha = generate_password_hash(nova_senha)
+        senha = request.form.get('senha')
+        confirmar_senha = request.form.get('confirmar_senha')
+        
+        if senha != confirmar_senha:
+            flash('As senhas não coincidem.', 'error')
+            return redirect(url_for('redefinir_senha', token=token))
+        
+        if len(senha) < 8:
+            flash('A senha deve ter pelo menos 8 caracteres.', 'error')
+            return redirect(url_for('redefinir_senha', token=token))
+        
+        usuario.senha = generate_password_hash(senha)
         usuario.reset_token = None
         db.session.commit()
         
-        flash('Sua senha foi redefinida com sucesso!', 'success')
+        flash('Senha redefinida com sucesso! Você já pode fazer login.', 'success')
         return redirect(url_for('login'))
     
     return render_template('redefinir_senha.html')
 
-@app.route('/get_notifications')
-@login_required
-def get_notifications():
-    """Retorna as notificações não lidas do usuário atual"""
-    notificacoes = Notificacao.query.filter_by(
-        usuario_id=current_user.id,
-        lida=False
-    ).order_by(Notificacao.data_criacao.desc()).all()
-    
-    return jsonify([{
-        'id': n.id,
-        'mensagem': n.mensagem,
-        'tipo': n.tipo,
-        'data': n.data_criacao.strftime('%d/%m/%Y %H:%M')
-    } for n in notificacoes])
-
-@app.route('/mark_notification_read/<int:id>', methods=['POST'])
-@login_required
-def mark_notification_read(id):
-    """Marca uma notificação como lida"""
-    notificacao = Notificacao.query.get_or_404(id)
-    if notificacao.usuario_id == current_user.id:
-        notificacao.lida = True
-        db.session.commit()
-        return jsonify({'success': True})
-    return jsonify({'success': False}), 403
-
-@app.route('/notificacoes/nao-lidas')
-@login_required
-def get_notificacoes():
-    """Retorna as notificações não lidas do usuário"""
-    notificacoes = Notificacao.query.filter_by(
-        usuario_id=current_user.id,
-        lida=False
-    ).order_by(Notificacao.data_criacao.desc()).all()
-    
-    return jsonify([{
-        'id': n.id,
-        'chamado_id': n.chamado_id,
-        'tipo': n.tipo,
-        'mensagem': n.mensagem,
-        'data_criacao': n.data_criacao.strftime('%d/%m/%Y %H:%M')
-    } for n in notificacoes])
-
-@app.route('/notificacoes/marcar-lida/<int:id>')
-@login_required
-def marcar_notificacao_lida(id):
-    """Marca uma notificação como lida"""
-    notificacao = Notificacao.query.get_or_404(id)
-    if notificacao.usuario_id != current_user.id:
-        return jsonify({'error': 'Não autorizado'}), 403
-    
-    notificacao.lida = True
-    db.session.commit()
-    return jsonify({'success': True})
-
-@app.route('/get_notifications')
-@login_required
-def get_notifications():
-    notificacoes = Notificacao.query.filter_by(usuario_id=current_user.id)\
-        .order_by(Notificacao.data_criacao.desc())\
-        .limit(10)\
-        .all()
-    
-    return jsonify({
-        'notifications': [{
-            'id': n.id,
-            'mensagem': n.mensagem,
-            'tipo': n.tipo,
-            'lida': n.lida,
-            'data_criacao': n.data_criacao.isoformat()
-        } for n in notificacoes]
-    })
-
-@app.route('/mark_notification_read/<int:id>', methods=['POST'])
-@login_required
-def mark_notification_read(id):
-    notificacao = Notificacao.query.get_or_404(id)
-    if notificacao.usuario_id == current_user.id:
-        notificacao.lida = True
-        db.session.commit()
-    return jsonify({'success': True})
-
-@app.route('/documentacao')
-@login_required
-def documentacao():
-    return render_template('documentacao.html')
-
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)

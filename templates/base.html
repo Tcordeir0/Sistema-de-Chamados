@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎧 Sistema de Chamados - Borgno Transportes</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%233B82F6' d='M256 80C149.9 80 62.4 157.6 49.6 262c-1.2 9.8 6.3 18 16 18h38.8c8.1 0 14.9-5.7 16.5-13.7C133.8 186.7 189.5 128 256 128s122.2 58.7 135.1 138.3c1.6 8 8.4 13.7 16.5 13.7h38.8c9.7 0 17.2-8.2 16-18C449.6 157.6 362.1 80 256 80zM192 256c0-35.3 28.7-64 64-64s64 28.7 64 64v128c0 35.3-28.7 64-64 64s-64-28.7-64-64V256z'/></svg>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="{{ url_for('static', filename='js/email.js') }}"></script>
-    {% block head %}{% endblock %}
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
     <style>
         :root {
             --primary: #3b82f6;
@@ -24,179 +26,49 @@
         body {
             background-color: var(--background);
             color: var(--foreground);
+            min-height: 100vh;
         }
 
-        .flash-message {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            background: var(--card);
-            color: var(--foreground);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            opacity: 0;
-            transform: translateY(-1rem);
-            transition: all 0.3s ease-out;
+        .btn-primary {
+            @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200;
         }
 
-        .flash-message.show {
-            opacity: 1;
-            transform: translateY(0);
+        .btn-secondary {
+            @apply bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200;
         }
 
-        .flash-message.success {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            border: 1px solid #10b981;
+        .input-field {
+            @apply bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
         }
 
-        .flash-message.error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid #ef4444;
-        }
-
-        /* Notificações */
-        .notifications-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            width: 380px;
-            max-height: 480px;
-            overflow-y: auto;
-            background: var(--card);
-            border: 1px solid #374151;
-            border-radius: 0.75rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            z-index: 50;
-            display: none;
-            scrollbar-width: thin;
-            scrollbar-color: #4B5563 #1F2937;
-        }
-
-        .notifications-dropdown::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .notifications-dropdown::-webkit-scrollbar-track {
-            background: #1F2937;
-            border-radius: 0.75rem;
-        }
-
-        .notifications-dropdown::-webkit-scrollbar-thumb {
-            background-color: #4B5563;
-            border-radius: 0.75rem;
-            border: 2px solid #1F2937;
-        }
-
-        .notifications-dropdown.show {
-            display: block;
-            animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-0.5rem) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .notification-item {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border-bottom: 1px solid #374151;
-        }
-
-        .notification-item:last-child {
-            border-bottom: none;
+        .card {
+            @apply bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700;
         }
 
         .notification-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background-color: #EF4444;
-            color: white;
-            border-radius: 9999px;
-            padding: 2px 6px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            min-width: 20px;
-            text-align: center;
+            @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center;
         }
 
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: .9;
-                transform: scale(1.05);
-            }
+        .dropdown-menu {
+            @apply absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 py-1 focus:outline-none;
         }
 
-        /* Ajustes para notificações */
-        .notification-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background-color: #EF4444;
-            color: white;
-            border-radius: 9999px;
-            padding: 2px 6px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            min-width: 20px;
-            text-align: center;
+        .dropdown-item {
+            @apply block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200;
         }
 
-        /* Z-index correto para elementos sobrepostos */
-        #userDropdown, #notificacoesDropdown {
-            z-index: 40;
+        /* Animações */
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        #toast-container {
-            z-index: 50;
-        }
-
-        .modal {
-            z-index: 45;
-        }
-
-        /* Animações suaves */
-        .notification-enter {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-
-        .notification-enter-active {
-            transform: translateX(0);
-            opacity: 1;
-            transition: transform 300ms ease-out, opacity 300ms ease-out;
-        }
-
-        .notification-exit {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .notification-exit-active {
-            transform: translateX(100%);
-            opacity: 0;
-            transition: transform 300ms ease-in, opacity 300ms ease-in;
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-900 text-white">
     {% if current_user.is_authenticated and request.endpoint != 'home' %}
     <nav class="bg-gray-900 border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -223,30 +95,28 @@
                 </div>
                 <div class="flex items-center">
                     <!-- Notificações -->
-                    <div class="relative mr-4" style="position: relative;">
-                        <button id="notificationsBtn" class="text-gray-300 hover:text-white p-2 rounded-full relative cursor-pointer" style="position: relative; z-index: 1;">
-                            <i class="fas fa-bell text-lg"></i>
-                            <span id="notificationCount" class="notification-badge hidden">0</span>
-                        </button>
-                        <div id="notificacoesDropdown" class="hidden absolute right-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
-                            <div class="p-4 border-b border-gray-700">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="text-lg font-semibold text-white flex items-center">
-                                        <i class="fas fa-bell text-blue-500 mr-2"></i>
-                                        Notificações
-                                    </h3>
-                                    <span id="notificationCount" class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full"></span>
+                    <div id="notifications-container" class="fixed top-4 right-4 z-50 space-y-4">
+                        {% for notification in notifications() %}
+                            <div class="notification-item bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700 animate-slide-in"
+                                 data-id="{{ notification.id }}">
+                                <div class="flex items-start space-x-4">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-bell text-blue-500 text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-white">{{ notification.mensagem }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ notification.data_criacao.strftime('%d/%m/%Y %H:%M') }}</p>
+                                    </div>
+                                    <button onclick="markAsRead(event, {{ notification.id }}, {{ notification.chamado_id }})"
+                                            class="text-gray-400 hover:text-white transition-colors"
+                                            title="Marcar como lida">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="max-h-96 overflow-y-auto" id="notificacoesList">
-                                <div class="p-4 text-center text-gray-400">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                                    <p>Carregando notificações...</p>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
-                    
+
                     <!-- Menu do usuário -->
                     <div class="relative">
                         <button id="userMenuBtn" class="text-gray-300 hover:text-white flex items-center">
@@ -265,252 +135,81 @@
     </nav>
     {% endif %}
 
+    <!-- Mensagens Flash -->
+    <div id="flash-messages" class="fixed top-4 right-4 z-50 space-y-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message bg-gray-800 rounded-lg shadow-lg p-4 border-l-4 
+                              {% if category == 'success' %}border-green-500{% else %}border-red-500{% endif %} 
+                              animate-slide-in">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas {% if category == 'success' %}fa-check-circle text-green-500{% else %}fa-exclamation-circle text-red-500{% endif %}"></i>
+                            <p class="text-sm">{{ message }}</p>
+                            <button onclick="this.parentElement.parentElement.remove()" 
+                                    class="text-gray-400 hover:text-white ml-auto"
+                                    title="Fechar mensagem">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
     </main>
 
-    <div id="flashMessage" class="flash-message">
-        <i class="fas fa-info-circle"></i>
-        <span id="flashText"></span>
-    </div>
-
-    {% block scripts %}{% endblock %}
-    
     <script>
-        // Flash Messages
-        function showFlash(message, type = 'success') {
-            const flash = document.getElementById('flashMessage');
-            const text = document.getElementById('flashText');
-            
-            flash.className = `flash-message ${type}`;
-            text.textContent = message;
-            flash.classList.add('show');
-            
-            setTimeout(() => {
-                flash.classList.remove('show');
-            }, 3000);
-        }
-
-        // Inicialização quando o documento estiver pronto
+        // Auto-hide toasts after 5 seconds
         document.addEventListener('DOMContentLoaded', function() {
-            const userMenuBtn = document.getElementById('userMenuBtn');
-            const userDropdown = document.getElementById('userDropdown');
-            const notificationsBtn = document.getElementById('notificationsBtn');
-            const notificacoesDropdown = document.getElementById('notificacoesDropdown');
-            const notificacoesList = document.getElementById('notificacoesList');
-            const notificationCount = document.getElementById('notificationCount');
-            
-            if (userMenuBtn && userDropdown) {
-                // User Menu Toggle
-                userMenuBtn.addEventListener('click', () => {
-                    userDropdown.classList.toggle('hidden');
-                });
-
-                // Fechar menu ao clicar fora
-                document.addEventListener('click', (e) => {
-                    if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                        userDropdown.classList.add('hidden');
-                    }
-                });
-            }
-
-            if (notificationsBtn) {
-                let notifications = [];
-                let notificationPollInterval;
-
-                function startNotificationPolling() {
-                    updateNotifications();
-                    notificationPollInterval = setInterval(updateNotifications, 30000);
-                }
-
-                function stopNotificationPolling() {
-                    if (notificationPollInterval) {
-                        clearInterval(notificationPollInterval);
-                    }
-                }
-
-                // Iniciar polling de notificações
-                startNotificationPolling();
-
-                // Gerenciar polling quando a página está visível/oculta
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        stopNotificationPolling();
-                    } else {
-                        startNotificationPolling();
-                    }
-                });
-
-                function updateNotifications() {
-                    fetch('/notificacoes/nao-lidas')
-                        .then(response => response.json())
-                        .then(data => {
-                            const previousCount = notifications.length;
-                            notifications = data;
-                            renderNotifications();
-                            
-                            if (data.length > previousCount) {
-                                const newCount = data.length - previousCount;
-                                showFlash(`Você tem ${newCount} nova${newCount > 1 ? 's' : ''} notificação${newCount > 1 ? 'ões' : ''}!`, 'success');
-                            }
-                        });
-                }
-
-                function renderNotifications() {
-                    notificacoesList.innerHTML = '';
-                    
-                    if (notifications.length === 0) {
-                        notificacoesList.innerHTML = `
-                            <div class="p-4 text-center text-gray-400">
-                                <i class="fas fa-bell-slash mb-2 text-2xl"></i>
-                                <p>Nenhuma notificação</p>
-                            </div>
-                        `;
-                        notificationCount.classList.add('hidden');
-                    } else {
-                        notifications.sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao));
-
-                        notifications.forEach(notif => {
-                            const date = new Date(notif.data_criacao);
-                            const formattedDate = new Intl.DateTimeFormat('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            }).format(date);
-
-                            const item = document.createElement('div');
-                            item.className = 'notification-item group hover:bg-blue-900/20 transition-colors duration-200';
-                            item.innerHTML = `
-                                <div class="flex items-start p-3">
-                                    <div class="flex-shrink-0">
-                                        <i class="fas ${notif.tipo === 'resposta' ? 'fa-comment' : notif.tipo === 'reprovacao' ? 'fa-times-circle' : 'fa-check-circle'} 
-                                           text-blue-500 text-xl"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm text-white">${notif.mensagem}</p>
-                                        <p class="text-xs text-gray-400 mt-1">${formattedDate}</p>
-                                    </div>
-                                    <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        <button class="text-gray-400 hover:text-white" 
-                                                onclick="markAsRead(event, ${notif.id}, ${notif.chamado_id})">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                            
-                            notificacoesList.appendChild(item);
-                        });
-                        
-                        notificationCount.textContent = notifications.length;
-                        notificationCount.classList.remove('hidden');
-                    }
-                }
-
-                function markAsRead(event, notifId, chamadoId) {
-                    event.stopPropagation();
-                    
-                    fetch(`/notificacoes/marcar-lida/${notifId}`)
-                        .then(() => {
-                            notifications = notifications.filter(n => n.id !== notifId);
-                            renderNotifications();
-                            showFlash('Notificação marcada como lida', 'success');
-                        });
-                }
-
-                // Toggle do dropdown de notificações
-                notificationsBtn.addEventListener('click', () => {
-                    notificacoesDropdown.classList.toggle('hidden');
-                });
-
-                // Fechar dropdown ao clicar fora
-                document.addEventListener('click', (event) => {
-                    if (!notificationsBtn.contains(event.target) && 
-                        !notificacoesDropdown.contains(event.target)) {
-                        notificacoesDropdown.classList.add('hidden');
-                    }
-                });
-            }
+            const toasts = document.querySelectorAll('[id^="toast-"]');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
+            });
         });
     </script>
+
     <script>
-        // Função para formatar as notificações
-        function formatarNotificacao(notificacao) {
-            const icones = {
-                'novo': 'fa-plus-circle text-green-500',
-                'resposta': 'fa-reply text-blue-500',
-                'encerrado': 'fa-check-circle text-purple-500',
-                'reprovado': 'fa-times-circle text-red-500'
-            };
-
-            const icone = icones[notificacao.tipo] || 'fa-bell text-blue-500';
-
-            return `
-                <div class="p-4 hover:bg-gray-700/50 transition-colors border-b border-gray-700 last:border-0">
-                    <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0">
-                            <i class="fas ${icone} text-xl"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm text-white">${notificacao.mensagem}</p>
-                            <p class="text-xs text-gray-400 mt-1">
-                                <i class="fas fa-clock mr-1"></i>
-                                ${notificacao.data}
-                            </p>
-                        </div>
-                        <button onclick="marcarComoLida(${notificacao.id})" 
-                                class="flex-shrink-0 text-gray-400 hover:text-white transition-colors">
-                            <i class="fas fa-check text-sm"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Função para atualizar a lista de notificações
-        function atualizarNotificacoes() {
-            fetch('/get_notifications')
-                .then(response => response.json())
-                .then(notificacoes => {
-                    const lista = document.getElementById('notificacoesList');
-                    const contador = document.getElementById('notificationCount');
-                    
-                    if (notificacoes.length === 0) {
-                        lista.innerHTML = `
-                            <div class="p-8 text-center text-gray-400">
-                                <i class="fas fa-bell-slash text-4xl mb-3"></i>
-                                <p>Nenhuma notificação no momento</p>
-                            </div>
-                        `;
-                        contador.textContent = '';
-                        contador.classList.add('hidden');
-                    } else {
-                        lista.innerHTML = notificacoes.map(formatarNotificacao).join('');
-                        contador.textContent = notificacoes.length;
-                        contador.classList.remove('hidden');
-                    }
-                });
-        }
-
         // Função para marcar notificação como lida
-        function marcarComoLida(id) {
-            fetch(`/mark_notification_read/${id}`, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        atualizarNotificacoes();
+        async function markAsRead(event, notificationId, chamadoId) {
+            event.preventDefault();
+            try {
+                const response = await fetch(`/mark-notification-read/${notificationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
                 });
+
+                if (response.ok) {
+                    const notification = event.target.closest('.notification-item');
+                    notification.style.animation = 'slideOut 0.3s ease-out forwards';
+                    setTimeout(() => notification.remove(), 300);
+
+                    if (chamadoId) {
+                        window.location.href = `/visualizar-chamado/${chamadoId}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao marcar notificação como lida:', error);
+            }
         }
 
-        // Atualizar notificações a cada 30 segundos
-        setInterval(atualizarNotificacoes, 30000);
-        
-        // Atualizar notificações ao carregar a página
-        document.addEventListener('DOMContentLoaded', atualizarNotificacoes);
+        // Remover mensagens flash após 5 segundos
+        document.querySelectorAll('.flash-message').forEach(message => {
+            setTimeout(() => {
+                message.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => message.remove(), 300);
+            }, 5000);
+        });
     </script>
+
     <script>
         // Monitor de Inatividade
         let timeoutId;
@@ -539,5 +238,6 @@
             document.addEventListener('DOMContentLoaded', setupInactivityMonitor);
         {% endif %}
     </script>
+    <script src="{{ url_for('static', filename='js/email.js') }}"></script>
 </body>
 </html>

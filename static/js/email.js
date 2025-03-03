@@ -1,53 +1,61 @@
+// Configuração do EmailJS
 (function() {
-    // Inicializar EmailJS com seu User ID
-    emailjs.init("ecYNzPKhLVsD_cNRs"); // Você precisará substituir pelo seu User ID real do EmailJS
-
-    window.enviarEmailChamado = function(chamadoId, titulo, descricao, autor) {
-        const templateParams = {
-            to_name: "Equipe de Suporte",
-            from_name: autor,
-            message: `
-Novo Chamado #${chamadoId}
-
-Título: ${titulo}
-${descricao}
-`,
-            to_email: 'chamados@borgnotransportes.com.br'
-        };
-
-        return emailjs.send('service_e2brzs9', 'template_fph5zj2', templateParams)
-            .then(function(response) {
-                console.log('Email enviado com sucesso:', response);
-                return true;
-            })
-            .catch(function(error) {
-                console.error('Erro ao enviar email:', error);
-                return false;
-            });
-    };
-
-    window.enviarEmailStatus = function(chamadoId, titulo, emailAutor, status, justificativa = '') {
-        const templateParams = {
-            to_name: "Usuário",
-            from_name: "Equipe de Suporte",
-            message: `
-Atualização do Chamado #${chamadoId}
-
-Título: ${titulo}
-Status: ${status}
-${justificativa ? `\nJustificativa: ${justificativa}` : ''}
-`,
-            to_email: emailAutor  // Enviando para o email do autor
-        };
-
-        return emailjs.send('service_e2brzs9', 'template_fph5zj2', templateParams)
-            .then(function(response) {
-                console.log('Email de status enviado com sucesso:', response);
-                return true;
-            })
-            .catch(function(error) {
-                console.error('Erro ao enviar email de status:', error);
-                return false;
-            });
-    };
+    emailjs.init("5eDsIKe3-RNVHqEfJ"); // Sua chave pública do EmailJS
 })();
+
+// Função para enviar email usando EmailJS
+async function enviarEmail(params) {
+    try {
+        const response = await emailjs.send(
+            'service_yvd0vhh', // ID do serviço
+            'template_j5hm6hp', // ID do template
+            params
+        );
+        console.log('Email enviado com sucesso:', response);
+        return true;
+    } catch (error) {
+        console.error('Erro ao enviar email:', error);
+        throw error;
+    }
+}
+
+// Função para enviar email de novo chamado
+async function enviarEmailNovoChamado(params) {
+    const templateParams = {
+        to_email: params.to_email,
+        to_name: params.to_name,
+        subject: params.subject,
+        chamado_titulo: params.chamado_titulo,
+        chamado_descricao: params.chamado_descricao,
+        autor_nome: params.autor_nome,
+        data_criacao: params.data_criacao
+    };
+
+    return await enviarEmail(templateParams);
+}
+
+// Função para enviar email de redefinição de senha
+async function enviarEmailRedefinicaoSenha(params) {
+    const templateParams = {
+        to_email: params.to_email,
+        to_name: params.to_name,
+        reset_url: params.reset_url,
+        subject: 'Redefinição de Senha - Sistema de Chamados'
+    };
+
+    return await enviarEmail(templateParams);
+}
+
+// Função para enviar email de atualização de status
+async function enviarEmailAtualizacaoStatus(params) {
+    const templateParams = {
+        to_email: params.to_email,
+        to_name: params.to_name,
+        chamado_titulo: params.chamado_titulo,
+        novo_status: params.novo_status,
+        justificativa: params.justificativa,
+        subject: 'Atualização de Status - Sistema de Chamados'
+    };
+
+    return await enviarEmail(templateParams);
+}
