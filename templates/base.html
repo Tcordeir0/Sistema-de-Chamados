@@ -107,7 +107,7 @@
                                         <p class="text-sm text-white">{{ notification.mensagem }}</p>
                                         <p class="text-xs text-gray-400 mt-1">{{ notification.data_criacao.strftime('%d/%m/%Y %H:%M') }}</p>
                                     </div>
-                                    <button onclick="markAsRead(event, {{ notification.id }}, {{ notification.chamado_id }})"
+                                    <button onclick="markAsRead(event, {{ notification.id }})"
                                             class="text-gray-400 hover:text-white transition-colors"
                                             title="Marcar como lida">
                                         <i class="fas fa-times"></i>
@@ -163,81 +163,79 @@
     </main>
 
     <script>
-        // Auto-hide toasts after 5 seconds
+        // Menu do usuário
         document.addEventListener('DOMContentLoaded', function() {
-            const toasts = document.querySelectorAll('[id^="toast-"]');
-            toasts.forEach(toast => {
-                setTimeout(() => {
-                    toast.classList.add('translate-x-full', 'opacity-0');
-                    setTimeout(() => toast.remove(), 300);
-                }, 5000);
-            });
-        });
-    </script>
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+            
+            if (userMenuBtn && userDropdown) {
+                userMenuBtn.addEventListener('click', function() {
+                    userDropdown.classList.toggle('hidden');
+                });
 
-    <script>
+                // Fechar ao clicar fora
+                document.addEventListener('click', function(event) {
+                    if (!userMenuBtn.contains(event.target) && !userDropdown.contains(event.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
         // Função para marcar notificação como lida
-        async function markAsRead(event, notificationId, chamadoId) {
+        async function markAsRead(event, notificationId) {
             event.preventDefault();
             try {
-                const response = await fetch(`/mark-notification-read/${notificationId}`, {
+                const response = await fetch('/mark-notification-read/' + notificationId, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
-
-                if (response.ok) {
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Remove a notificação com animação
                     const notification = event.target.closest('.notification-item');
                     notification.style.animation = 'slideOut 0.3s ease-out forwards';
-                    setTimeout(() => notification.remove(), 300);
-
-                    if (chamadoId) {
-                        window.location.href = `/visualizar-chamado/${chamadoId}`;
-                    }
+                    setTimeout(() => {
+                        notification.remove();
+                        // Se tiver um chamado_id, redireciona para ele
+                        if (data.chamado_id) {
+                            window.location.href = '/visualizar_chamado/' + data.chamado_id;
+                        }
+                    }, 300);
+                } else {
+                    console.error('Erro:', data.message);
                 }
             } catch (error) {
                 console.error('Erro ao marcar notificação como lida:', error);
             }
         }
 
-        // Remover mensagens flash após 5 segundos
-        document.querySelectorAll('.flash-message').forEach(message => {
-            setTimeout(() => {
-                message.style.animation = 'slideOut 0.3s ease-out forwards';
-                setTimeout(() => message.remove(), 300);
-            }, 5000);
-        });
-    </script>
-
-    <script>
-        // Monitor de Inatividade
-        let timeoutId;
-        const inactivityTime = 60000; // 1 minuto em milissegundos
-
-        function resetTimer() {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(logout, inactivityTime);
-        }
-
-        function logout() {
-            window.location.href = "{{ url_for('logout') }}";
-        }
-
-        // Eventos para resetar o timer
-        function setupInactivityMonitor() {
-            const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
-            events.forEach(event => {
-                document.addEventListener(event, resetTimer);
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.flash-message');
+            messages.forEach(message => {
+                setTimeout(() => {
+                    message.style.animation = 'slideOut 0.3s ease-out forwards';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
             });
-            resetTimer();
-        }
+        });
 
-        // Iniciar monitoramento apenas se o usuário estiver logado
-        {% if current_user.is_authenticated %}
-            document.addEventListener('DOMContentLoaded', setupInactivityMonitor);
-        {% endif %}
+        // Adiciona animação de slideOut
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideOut {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(-10px); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
+
     <script src="{{ url_for('static', filename='js/email.js') }}"></script>
 </body>
 </html>

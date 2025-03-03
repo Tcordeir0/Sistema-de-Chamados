@@ -170,7 +170,7 @@ def sistema_chamados():
     return redirect(url_for('meus_chamados'))
 
 @app.route('/registro', methods=['GET', 'POST'])
-@limiter.limit("3 per hour")
+@limiter.limit("20 per hour")  # Aumentado para 20 tentativas por hora
 def registro():
     if current_user.is_authenticated:
         if current_user.has_role('ADM'):
@@ -288,29 +288,19 @@ def novo_chamado():
                 )
                 db.session.add(notif)
             
-            # Enviar e-mail para o suporte
-            email_service.send_email(
-                subject=f'Novo Chamado: {titulo}',
-                sender=app.config['MAIL_USERNAME'],
-                recipients=['suporte@borgnotransportes.com.br'],
-                body=f'''
-Novo chamado criado por {current_user.nome}
-
-Título: {titulo}
-Criticidade: {criticidade}
-Status: Aberto
-
-Descrição:
-{descricao}
-
-Para responder a este chamado, acesse o sistema: http://localhost:5000/visualizar-chamado/{novo.id}
-
---
-Sistema de Chamados - Borgno Transportes
-'''
+            # Enviar e-mail usando EmailJS
+            email_params = enviar_notificacao_email(
+                usuario=current_user,
+                chamado=novo,
+                tipo_notificacao="novo_chamado"
             )
             
             db.session.commit()
+            
+            # Retorna JSON com os parâmetros do email se for uma requisição AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return email_params
+            
             flash('Chamado criado com sucesso!', 'success')
             return redirect(url_for('meus_chamados'))
             
@@ -337,30 +327,39 @@ def visualizar_chamado(id):
 def enviar_notificacao_email(usuario, chamado, tipo_notificacao):
     """Envia notificação por email usando EmailJS"""
     try:
-        assunto = f"Novo {tipo_notificacao} no Chamado #{chamado.id}"
-        mensagem = f"""
-        Olá {usuario.nome},
-        
-        Você recebeu um novo {tipo_notificacao} no chamado #{chamado.id}: {chamado.titulo}
-        
-        Para visualizar, acesse o sistema de chamados.
-        
-        Atenciosamente,
-        Sistema de Chamados - Borg Transportes
-        """
-        
-        sucesso, mensagem = email_service.send_email(
-            to_email=usuario.email,
-            subject=assunto,
-            message=mensagem,
-            name="Sistema de Chamados - Borg Transportes"
-        )
-        
-        if not sucesso:
-            print(f"Erro ao enviar email: {mensagem}")
-            
+        if tipo_notificacao == "novo_chamado":
+            assunto = f"Novo Chamado: {chamado.titulo}"
+            mensagem = render_template('email/novo_chamado.html',
+                                    chamado=chamado,
+                                    autor=chamado.autor)
+        elif tipo_notificacao == "resposta":
+            assunto = f"Nova Resposta no Chamado: {chamado.titulo}"
+            mensagem = render_template('email/resposta_chamado.html',
+                                    chamado=chamado,
+                                    autor=current_user)
+        else:
+            assunto = f"Atualização no Chamado: {chamado.titulo}"
+            mensagem = render_template('email/atualizacao_chamado.html',
+                                    chamado=chamado,
+                                    autor=current_user)
+
+        # Enviar email usando EmailJS
+        return jsonify({
+            'success': True,
+            'params': {
+                'to_email': usuario.email,
+                'to_name': usuario.nome,
+                'subject': assunto,
+                'chamado_titulo': chamado.titulo,
+                'chamado_descricao': chamado.descricao,
+                'autor_nome': chamado.autor.nome,
+                'data_criacao': chamado.data_criacao.strftime('%d/%m/%Y %H:%M')
+            }
+        })
+
     except Exception as e:
-        print(f"Erro ao enviar notificação por email: {str(e)}")
+        print(f"Erro ao preparar notificação por email: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/responder_chamado/<int:id>', methods=['POST'])
 @login_required
@@ -400,30 +399,73 @@ def responder_chamado(id):
 @login_required
 @admin_required
 def encerrar_chamado(id):
-    chamado = Chamado.query.get_or_404(id)
-    
-    if chamado.status == 'Encerrado':
-        flash('Este chamado já está encerrado.', 'error')
-        return redirect(url_for('visualizar_chamado', id=id))
-    
-    chamado.status = 'Encerrado'
-    
-    # Criar notificação
-    notificacao = Notificacao(
-        usuario_id=chamado.autor_id,
-        chamado_id=id,
-        tipo='resolucao',
-        mensagem=f'Chamado #{id} foi encerrado'
-    )
-    db.session.add(notificacao)
-    
-    # Enviar email de notificação
-    autor = Usuario.query.get(chamado.autor_id)
-    enviar_notificacao_email(autor, chamado, "encerramento")
-    
-    db.session.commit()
-    flash('Chamado encerrado com sucesso!', 'success')
-    return redirect(url_for('visualizar_chamado', id=id))
+    try:
+        chamado = Chamado.query.get_or_404(id)
+        
+        if chamado.status == 'Encerrado':
+            return jsonify({'success': False, 'message': 'Este chamado já está encerrado.'})
+        
+        chamado.status = 'Encerrado'
+        
+        # Criar notificação
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=id,
+            tipo='resolucao',
+            mensagem=f'Chamado #{id} foi encerrado'
+        )
+        db.session.add(notificacao)
+        
+        # Enviar email de notificação
+        autor = Usuario.query.get(chamado.autor_id)
+        enviar_notificacao_email(autor, chamado, "encerramento")
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Chamado encerrado com sucesso!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/reprovar_chamado/<int:id>', methods=['POST'])
+@login_required
+@admin_required
+def reprovar_chamado(id):
+    try:
+        chamado = Chamado.query.get_or_404(id)
+        
+        if chamado.status == 'Reprovado':
+            return jsonify({'success': False, 'message': 'Este chamado já está reprovado.'})
+        
+        # Pegar a justificativa do request
+        justificativa = request.json.get('justificativa')
+        if not justificativa:
+            return jsonify({'success': False, 'message': 'É necessário fornecer uma justificativa.'})
+        
+        chamado.status = 'Reprovado'
+        
+        # Criar notificação
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=id,
+            tipo='reprovacao',
+            mensagem=f'Chamado #{id} foi reprovado. Justificativa: {justificativa}'
+        )
+        db.session.add(notificacao)
+        
+        # Enviar email de notificação
+        autor = Usuario.query.get(chamado.autor_id)
+        email_params = enviar_notificacao_email(autor, chamado, "reprovacao")
+        
+        db.session.commit()
+        return jsonify({
+            'success': True, 
+            'message': 'Chamado reprovado com sucesso!',
+            'email_params': email_params.json
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/esqueci_senha', methods=['GET', 'POST'])
 @limiter.limit("3 per hour")
@@ -543,19 +585,33 @@ def get_notifications():
 @app.route('/mark-notification-read/<int:id>', methods=['POST'])
 @login_required
 def mark_notification_read(id):
-    notif = Notificacao.query.get_or_404(id)
-    if notif.usuario_id != current_user.id:
-        return jsonify({'error': 'Você não tem permissão para marcar esta notificação como lida'}), 403
-    notif.lida = True
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        notificacao = Notificacao.query.get_or_404(id)
+        
+        # Verifica se a notificação pertence ao usuário
+        if notificacao.usuario_id != current_user.id:
+            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+        
+        notificacao.lida = True
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notificação marcada como lida',
+            'chamado_id': notificacao.chamado_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/documentacao')
 @login_required
 def documentacao():
     return render_template('documentacao.html')
 
-from app import db
-db.create_all()
-exit()if __name__ == '__main__':
+# Inicialização do banco de dados
+with app.app_context():
+    db.create_all()
+
+if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=8000)

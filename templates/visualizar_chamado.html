@@ -14,8 +14,10 @@
                         <span class="px-2 py-1 rounded-full text-xs
                             {% if chamado.status == 'Aberto' %}
                                 bg-green-500/20 text-green-400
-                            {% else %}
+                            {% elif chamado.status == 'Encerrado' %}
                                 bg-blue-500/20 text-blue-400
+                            {% elif chamado.status == 'Reprovado' %}
+                                bg-red-500/20 text-red-400
                             {% endif %}">
                             {{ chamado.status }}
                         </span>
@@ -151,84 +153,62 @@ function fecharModalReprovacao() {
     chamadoIdParaReprovar = null;
 }
 
-function reprovarChamado() {
+async function reprovarChamado() {
     const justificativa = document.getElementById('justificativa').value.trim();
     if (!justificativa) {
         alert('Por favor, forneça uma justificativa para a reprovação.');
         return;
     }
 
-    fetch(`/reprovar_chamado/${chamadoIdParaReprovar}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ justificativa: justificativa })
-    })
-    .then(response => response.json())
-    .then(data => {
+    try {
+        const response = await fetch(`/reprovar_chamado/${chamadoIdParaReprovar}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ justificativa: justificativa })
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
-            // Enviar email de reprovação
-            enviarEmailStatus(
-                '{{ chamado.id }}',
-                '{{ chamado.titulo }}',
-                '{{ chamado.autor.email }}',
-                'Reprovado',
-                justificativa
-            ).then(() => {
-                window.location.href = "{{ url_for('dashboard') }}";
-            });
+            if (data.email_params) {
+                try {
+                    await processarRespostaEmail(data.email_params);
+                } catch (emailError) {
+                    console.error('Erro ao enviar email:', emailError);
+                }
+            }
+            window.location.href = "{{ url_for('dashboard') }}";
+        } else {
+            alert(data.message || 'Erro ao reprovar chamado');
         }
-    });
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao reprovar chamado. Por favor, tente novamente.');
+    }
 }
 
-function encerrarChamado(chamadoId) {
-    // Criar e mostrar o modal de confirmação
-    const modalHtml = `
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" id="modalConfirmacao">
-            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 transform transition-all">
-                <div class="text-center mb-6">
-                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-500/20 mb-4">
-                        <i class="fas fa-question-circle text-blue-500 text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">Confirmar Encerramento</h3>
-                    <p class="text-gray-300">Tem certeza que deseja encerrar este chamado?</p>
-                </div>
-                <div class="flex justify-end space-x-4">
-                    <button onclick="document.getElementById('modalConfirmacao').remove()" 
-                            class="px-4 py-2 text-gray-300 hover:text-white transition-colors">
-                        Cancelar
-                    </button>
-                    <button onclick="confirmarEncerramento(${chamadoId})" 
-                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        Confirmar
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
-
-function confirmarEncerramento(chamadoId) {
-    document.getElementById('modalConfirmacao').remove();
-    fetch(`/encerrar_chamado/${chamadoId}`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
+async function encerrarChamado(id) {
+    try {
+        const response = await fetch(`/encerrar_chamado/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
-            // Enviar email de encerramento
-            enviarEmailStatus(
-                '{{ chamado.id }}',
-                '{{ chamado.titulo }}',
-                '{{ chamado.autor.email }}',
-                'Encerrado'
-            ).then(() => {
-                window.location.href = "{{ url_for('dashboard') }}";
-            });
+            window.location.reload();
+        } else {
+            alert(data.message || 'Erro ao encerrar chamado');
         }
-    });
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao encerrar chamado');
+    }
 }
 </script>
 {% endblock %}

@@ -1,65 +1,89 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-900 py-6">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-700">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-semibold text-white">Novo Chamado</h2>
-                    <a href="{{ url_for('meus_chamados') }}" 
-                       class="inline-flex items-center px-3 py-1.5 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 focus:outline-none">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Voltar
-                    </a>
-                </div>
-            </div>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Novo Chamado</h1>
 
-            <form method="POST" action="{{ url_for('novo_chamado') }}" class="px-6 py-4 space-y-6">
-                <div>
-                    <label for="titulo" class="block text-sm font-medium text-gray-300">
-                        Título
-                    </label>
-                    <input type="text" name="titulo" id="titulo" required
-                           class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400
-                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="Digite um título para o chamado">
-                </div>
-
-                <div>
-                    <label for="criticidade" class="block text-sm font-medium text-gray-300">
-                        Criticidade
-                    </label>
-                    <select name="criticidade" id="criticidade" required
-                            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white
-                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="" disabled selected>Selecione a criticidade</option>
-                        <option value="Baixa" class="text-green-500">Baixa - Pode aguardar</option>
-                        <option value="Média" class="text-yellow-500">Média - Atenção necessária</option>
-                        <option value="Alta" class="text-red-500">Alta - Urgente</option>
-                        <option value="Crítica" class="text-red-600">Crítica - Emergência</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="descricao" class="block text-sm font-medium text-gray-300">
-                        Descrição
-                    </label>
-                    <textarea name="descricao" id="descricao" rows="6" required
-                              class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                              placeholder="Descreva detalhadamente seu problema ou solicitação"></textarea>
-                </div>
-
-                <div class="flex justify-end pt-4">
-                    <button type="submit"
-                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <i class="fas fa-paper-plane mr-2"></i>
-                        Criar Chamado
-                    </button>
-                </div>
-            </form>
+    <form id="formNovoChamado" method="POST" class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <div class="mb-6">
+            <label for="titulo" class="block text-gray-700 text-sm font-bold mb-2">Título *</label>
+            <input type="text" id="titulo" name="titulo" required
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Digite o título do chamado">
         </div>
-    </div>
+
+        <div class="mb-6">
+            <label for="descricao" class="block text-gray-700 text-sm font-bold mb-2">Descrição *</label>
+            <textarea id="descricao" name="descricao" required rows="6"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Descreva detalhadamente o seu chamado"></textarea>
+        </div>
+
+        <div class="mb-6">
+            <label for="criticidade" class="block text-gray-700 text-sm font-bold mb-2">Criticidade</label>
+            <select id="criticidade" name="criticidade"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option value="Baixa">Baixa</option>
+                <option value="Média" selected>Média</option>
+                <option value="Alta">Alta</option>
+                <option value="Crítica">Crítica</option>
+            </select>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <button type="submit" id="btnSubmit"
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-200">
+                <i class="fas fa-paper-plane mr-2"></i>Criar Chamado
+            </button>
+            <a href="{{ url_for('meus_chamados') }}"
+                class="text-blue-500 hover:text-blue-700 font-semibold transition-colors duration-200">
+                <i class="fas fa-arrow-left mr-1"></i>Voltar
+            </a>
+        </div>
+    </form>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formNovoChamado');
+    const submitBtn = document.getElementById('btnSubmit');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Criando...';
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('/novo-chamado', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                const emailParams = await processarRespostaEmail(response);
+                if (emailParams) {
+                    window.location.href = '{{ url_for("meus_chamados") }}';
+                } else {
+                    console.error('Erro ao enviar email de notificação');
+                    window.location.href = '{{ url_for("meus_chamados") }}';
+                }
+            } else {
+                throw new Error('Erro ao criar chamado');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao criar chamado. Por favor, tente novamente.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Criar Chamado';
+        }
+    });
+});
+</script>
 {% endblock %}

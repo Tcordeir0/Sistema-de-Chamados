@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Truck, AlertCircle, Headset, FileText, Users, Settings } from 'lucide-react';
+import { Send, Truck, AlertCircle, PhoneCall, FileText, Users, Settings } from 'lucide-react';
 import emailjs from 'emailjs-com';
 
 function App() {
@@ -87,7 +87,7 @@ function App() {
             <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105 cursor-pointer border border-gray-100 hover:border-blue-200">
               <div className="p-6 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <Headset size={32} className="text-blue-600" />
+                  <PhoneCall size={32} className="text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Sistema de Chamados</h3>
                 <p className="text-gray-600 mb-4">
