@@ -1,3 +1,7 @@
+# Dependências
+node_modules/
+package-lock.json
+
 # Arquivos de ambiente e chaves
 .env
 .key
@@ -37,3 +41,15 @@ ENV/
 # Arquivos do sistema
 .DS_Store
 Thumbs.db
+
+# Build e cache
+dist/
+build/
+*.pyc
+.cache/
+.pytest_cache/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
