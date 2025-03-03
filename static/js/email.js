@@ -59,8 +59,9 @@ Sistema de Chamados - Borgno Transportes
 }
 
 // Função para processar resposta do backend
-async function processarRespostaEmail(data) {
+async function processarRespostaEmail(response) {
     try {
+        const data = await response.json();
         if (data.success && data.params) {
             return await enviarEmail(data.params);
         } else {

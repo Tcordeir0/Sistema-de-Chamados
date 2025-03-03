@@ -1,42 +1,42 @@
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from functools import wraps
+import os
+import json
 from werkzeug.security import generate_password_hash, check_password_hash
-import pytz
+import secrets
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import secrets
-from secure_config import DevelopmentConfig, ProductionConfig
-from utils.email_service import email_service
-import os
+import pytz
+
+# Importação temporária para teste
+from config_temp import DevelopmentConfig, ProductionConfig
 
 app = Flask(__name__)
 app.config.from_object(ProductionConfig if os.environ.get('FLASK_ENV') == 'production' else DevelopmentConfig)
 
-# Configuração do Talisman (Segurança HTTPS e Headers)
+# Configurações de segurança
 talisman = Talisman(
     app,
-    force_https=True,  # Ativar em produção
-    strict_transport_security=True,
-    session_cookie_secure=True,  # Ativar em produção
     content_security_policy={
-        'default-src': ["'self'", 'https:', "'unsafe-inline'", "'unsafe-eval'", 'cdn.tailwindcss.com', 'cdnjs.cloudflare.com'],
-        'img-src': ["'self'", 'https:', 'data:'],
-        'font-src': ["'self'", 'https:', 'data:', 'cdnjs.cloudflare.com'],
-        'style-src': ["'self'", "'unsafe-inline'", 'https:', 'cdn.tailwindcss.com'],
-        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.tailwindcss.com', 'cdnjs.cloudflare.com']
-    }
+        'default-src': "'self'",
+        'img-src': "'self' data:",
+        'script-src': "'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.tailwindcss.com",
+        'style-src': "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://cdnjs.cloudflare.com",
+        'font-src': "'self' data: https://cdnjs.cloudflare.com",
+        'connect-src': "'self'"
+    },
+    force_https=False  # Altere para True em produção
 )
 
-# Configuração do Flask-Limiter
+# Rate limiting
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
+    default_limits=["200 per day", "50 per hour"]
 )
 
 # Configurar exceções para rotas específicas
@@ -48,25 +48,27 @@ def ip_whitelist():
 TIMEZONE = pytz.timezone('America/Sao_Paulo')
 
 # Filtro para formatar data e hora
-@app.template_filter('datetime')
+@app.template_filter('format_datetime')
 def format_datetime(value):
-    if isinstance(value, str):
-        value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+    if value is None:
+        return ""
     return value.strftime('%d/%m/%Y %H:%M')
 
 db = SQLAlchemy(app)
+
+# Login Manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.login_message = 'Por favor, faça login para acessar esta página.'
+login_manager.login_message_category = 'info'
 
-# Context processor para notificações
-@app.context_processor
-def utility_processor():
-    def get_user_notifications():
-        if current_user.is_authenticated:
-            return Notificacao.query.filter_by(usuario_id=current_user.id, lida=False).all()
-        return []
-    return dict(notifications=get_user_notifications)
+@app.before_request
+def force_login():
+    public_endpoints = ['static', 'login', 'registro', 'esqueci_senha', 'redefinir_senha']
+    if not any(request.endpoint and request.endpoint.startswith(ep) for ep in public_endpoints):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
 
 class Usuario(UserMixin, db.Model):
     """Modelo para armazenar informações dos usuários do sistema"""
@@ -170,42 +172,44 @@ def sistema_chamados():
     return redirect(url_for('meus_chamados'))
 
 @app.route('/registro', methods=['GET', 'POST'])
-@limiter.limit("20 per hour")  # Aumentado para 20 tentativas por hora
 def registro():
-    if current_user.is_authenticated:
-        if current_user.has_role('ADM'):
-            return redirect(url_for('dashboard'))
-        return redirect(url_for('meus_chamados'))
-    
     if request.method == 'POST':
         nome = request.form.get('nome')
         email = request.form.get('email')
         senha = request.form.get('senha')
+        confirmar_senha = request.form.get('confirmar_senha')
         
-        if Usuario.query.filter_by(email=email).first():
-            flash('Email já cadastrado.', 'error')
+        # Validações
+        if not nome or not email or not senha or not confirmar_senha:
+            flash('Por favor, preencha todos os campos.', 'error')
             return redirect(url_for('registro'))
-        
-        # Set admin flag if the user is Talys Silva
-        is_admin = nome.lower() == 'talys silva'
-        
-        hash_senha = generate_password_hash(senha, method='sha256')
+            
+        if senha != confirmar_senha:
+            flash('As senhas não coincidem.', 'error')
+            return redirect(url_for('registro'))
+            
+        # Verificar se o email já existe
+        if Usuario.query.filter_by(email=email).first():
+            flash('Este email já está cadastrado.', 'error')
+            return redirect(url_for('registro'))
+            
+        # Criar novo usuário
         novo_usuario = Usuario(
             nome=nome,
             email=email,
-            senha=hash_senha,
-            is_admin=is_admin
+            senha=generate_password_hash(senha, method='sha256')
         )
         
         try:
             db.session.add(novo_usuario)
             db.session.commit()
-            flash('Cadastro realizado com sucesso!', 'success')
+            flash('Conta criada com sucesso! Faça login para continuar.', 'success')
             return redirect(url_for('login'))
-        except:
+        except Exception as e:
             db.session.rollback()
-            flash('Erro ao cadastrar usuário!', 'error')
-            
+            flash('Erro ao criar conta. Por favor, tente novamente.', 'error')
+            return redirect(url_for('registro'))
+    
     return render_template('registro.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -248,10 +252,9 @@ def dashboard():
 @app.route('/meus_chamados')
 @login_required
 def meus_chamados():
-    if current_user.has_role('ADM'):
-        chamados = Chamado.query.order_by(Chamado.data_criacao.desc()).all()
-    else:
-        chamados = Chamado.query.filter_by(autor_id=current_user.id).order_by(Chamado.data_criacao.desc()).all()
+    if current_user.is_admin:
+        return redirect(url_for('dashboard'))
+    chamados = Chamado.query.filter_by(autor_id=current_user.id).order_by(Chamado.data_criacao.desc()).all()
     return render_template('meus_chamados.html', chamados=chamados)
 
 @app.route('/novo-chamado', methods=['GET', 'POST'])
@@ -299,7 +302,7 @@ def novo_chamado():
             
             # Retorna JSON com os parâmetros do email se for uma requisição AJAX
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return email_params
+                return email_params.get_json()
             
             flash('Chamado criado com sucesso!', 'success')
             return redirect(url_for('meus_chamados'))
@@ -608,6 +611,51 @@ def mark_notification_read(id):
 @login_required
 def documentacao():
     return render_template('documentacao.html')
+
+@app.route('/api/notifications')
+@login_required
+def get_notifications_api():
+    notifications = Notificacao.query.filter_by(
+        usuario_id=current_user.id
+    ).order_by(Notificacao.data_criacao.desc()).all()
+    
+    return jsonify({
+        'notifications': [{
+            'id': n.id,
+            'message': n.mensagem,
+            'time': n.data_criacao.strftime('%d/%m/%Y %H:%M'),
+            'read': n.lida
+        } for n in notifications],
+        'unread_count': len([n for n in notifications if not n.lida])
+    })
+
+@app.route('/api/notifications/<int:id>', methods=['DELETE'])
+@login_required
+def delete_notification(id):
+    notification = Notificacao.query.get_or_404(id)
+    if notification.usuario_id != current_user.id:
+        abort(403)
+    
+    db.session.delete(notification)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/notifications', methods=['DELETE'])
+@login_required
+def clear_notifications():
+    Notificacao.query.filter_by(usuario_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({'success': True})
+
+def criar_notificacao(usuario_id, mensagem, chamado_id=None):
+    notificacao = Notificacao(
+        usuario_id=usuario_id,
+        chamado_id=chamado_id,
+        mensagem=mensagem,
+        data_criacao=datetime.now()
+    )
+    db.session.add(notificacao)
+    db.session.commit()
 
 # Inicialização do banco de dados
 with app.app_context():

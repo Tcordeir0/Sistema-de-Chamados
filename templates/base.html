@@ -1,132 +1,108 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎧 Sistema de Chamados - Borgno Transportes</title>
+    <title>Sistema de Chamados - Borgno Transportes</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-in': 'slideIn 0.5s ease-out',
+                        'bounce-slow': 'bounce 3s infinite'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Custom CSS -->
-    <style>
-        :root {
-            --primary: #3b82f6;
-            --accent: #1f2937;
-            --background: #111827;
-            --card: #1f2937;
-            --foreground: #ffffff;
-            --error: #ef4444;
-            --success: #10b981;
-        }
-
-        body {
-            background-color: var(--background);
-            color: var(--foreground);
-            min-height: 100vh;
-        }
-
-        .btn-primary {
-            @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200;
-        }
-
-        .btn-secondary {
-            @apply bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200;
-        }
-
-        .input-field {
-            @apply bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
-        }
-
-        .card {
-            @apply bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700;
-        }
-
-        .notification-badge {
-            @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center;
-        }
-
-        .dropdown-menu {
-            @apply absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 py-1 focus:outline-none;
-        }
-
-        .dropdown-item {
-            @apply block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200;
-        }
-
-        /* Animações */
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .animate-slide-in {
-            animation: slideIn 0.3s ease-out forwards;
-        }
-    </style>
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+    
+    <!-- EmailJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="{{ url_for('static', filename='js/email.js') }}"></script>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
     {% if current_user.is_authenticated and request.endpoint != 'home' %}
-    <nav class="bg-gray-900 border-b border-gray-800">
+    <nav class="bg-white dark:bg-gray-800 shadow-lg animate-fade-in">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url_for('home') }}" class="text-white text-xl font-bold flex items-center">
-                        <i class="fas fa-truck text-blue-500 mr-2"></i>
-                        Borgno Transportes
-                    </a>
-                    <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="{{ url_for('home') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-headset mr-2"></i>Sistema de Chamados
-                        </a>
-                        {% if current_user.has_role('ADM') %}
-                        <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                        </a>
-                        {% else %}
-                        <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-list-alt mr-2"></i>Meus Chamados
-                        </a>
-                        {% endif %}
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center space-x-4">
+                        <i class="fas fa-truck text-indigo-600 text-2xl animate-bounce-slow"></i>
+                        <span class="text-xl font-bold text-gray-900 dark:text-white">Borgno Transportes</span>
                     </div>
                 </div>
-                <div class="flex items-center">
+
+                <div class="flex items-center space-x-4">
                     <!-- Notificações -->
-                    <div id="notifications-container" class="fixed top-4 right-4 z-50 space-y-4">
-                        {% for notification in notifications() %}
-                            <div class="notification-item bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700 animate-slide-in"
-                                 data-id="{{ notification.id }}">
-                                <div class="flex items-start space-x-4">
-                                    <div class="flex-shrink-0">
-                                        <i class="fas fa-bell text-blue-500 text-xl"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-white">{{ notification.mensagem }}</p>
-                                        <p class="text-xs text-gray-400 mt-1">{{ notification.data_criacao.strftime('%d/%m/%Y %H:%M') }}</p>
-                                    </div>
-                                    <button onclick="markAsRead(event, {{ notification.id }})"
-                                            class="text-gray-400 hover:text-white transition-colors"
-                                            title="Marcar como lida">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none">
+                            <span class="sr-only">Notificações</span>
+                            <i class="fas fa-bell text-xl"></i>
+                            <span id="notification-count" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">0</span>
+                        </button>
+                        
+                        <div x-show="open" @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-gray-700 animate-slide-in">
+                            <div class="py-1" id="notifications-container">
+                                <!-- Notificações serão inseridas aqui -->
                             </div>
-                        {% endfor %}
+                            <div class="py-1">
+                                <button onclick="clearNotifications()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    Limpar todas
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Menu do usuário -->
-                    <div class="relative">
-                        <button id="userMenuBtn" class="text-gray-300 hover:text-white flex items-center">
-                            <span class="mr-2">{{ current_user.nome }}</span>
-                            <i class="fas fa-user-circle text-xl"></i>
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none transition-colors">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline"></i>
+                    </button>
+
+                    <!-- User Menu -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none">
+                            <span>{{ current_user.nome }}</span>
+                            <i class="fas fa-chevron-down text-sm"></i>
                         </button>
-                        <div id="userDropdown" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-gray-800 ring-1 ring-black ring-opacity-5 hidden">
-                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Sair
-                            </a>
+                        
+                        <div x-show="open" @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 animate-slide-in">
+                            <div class="py-1">
+                                {% if current_user.is_admin %}
+                                <a href="{{ url_for('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    Dashboard
+                                </a>
+                                {% else %}
+                                <a href="{{ url_for('meus_chamados') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    Meus Chamados
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    Sair
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -135,107 +111,87 @@
     </nav>
     {% endif %}
 
-    <!-- Mensagens Flash -->
-    <div id="flash-messages" class="fixed top-4 right-4 z-50 space-y-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 animate-fade-in">
                 {% for category, message in messages %}
-                    <div class="flash-message bg-gray-800 rounded-lg shadow-lg p-4 border-l-4 
-                              {% if category == 'success' %}border-green-500{% else %}border-red-500{% endif %} 
-                              animate-slide-in">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas {% if category == 'success' %}fa-check-circle text-green-500{% else %}fa-exclamation-circle text-red-500{% endif %}"></i>
-                            <p class="text-sm">{{ message }}</p>
-                            <button onclick="this.parentElement.parentElement.remove()" 
-                                    class="text-gray-400 hover:text-white ml-auto"
-                                    title="Fechar mensagem">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
+                    <div class="rounded-md p-4 mb-4 
+                        {% if category == 'success' %}
+                            bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200
+                        {% elif category == 'error' %}
+                            bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-200
+                        {% else %}
+                            bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200
+                        {% endif %}">
+                        {{ message }}
                     </div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
+            </div>
+        {% endif %}
+    {% endwith %}
 
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         {% block content %}{% endblock %}
     </main>
 
     <script>
-        // Menu do usuário
-        document.addEventListener('DOMContentLoaded', function() {
-            const userMenuBtn = document.getElementById('userMenuBtn');
-            const userDropdown = document.getElementById('userDropdown');
-            
-            if (userMenuBtn && userDropdown) {
-                userMenuBtn.addEventListener('click', function() {
-                    userDropdown.classList.toggle('hidden');
-                });
-
-                // Fechar ao clicar fora
-                document.addEventListener('click', function(event) {
-                    if (!userMenuBtn.contains(event.target) && !userDropdown.contains(event.target)) {
-                        userDropdown.classList.add('hidden');
-                    }
-                });
-            }
-        });
-
-        // Função para marcar notificação como lida
-        async function markAsRead(event, notificationId) {
-            event.preventDefault();
-            try {
-                const response = await fetch('/mark-notification-read/' + notificationId, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Remove a notificação com animação
-                    const notification = event.target.closest('.notification-item');
-                    notification.style.animation = 'slideOut 0.3s ease-out forwards';
-                    setTimeout(() => {
-                        notification.remove();
-                        // Se tiver um chamado_id, redireciona para ele
-                        if (data.chamado_id) {
-                            window.location.href = '/visualizar_chamado/' + data.chamado_id;
-                        }
-                    }, 300);
-                } else {
-                    console.error('Erro:', data.message);
-                }
-            } catch (error) {
-                console.error('Erro ao marcar notificação como lida:', error);
-            }
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         }
 
-        // Auto-hide flash messages after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            const messages = document.querySelectorAll('.flash-message');
-            messages.forEach(message => {
-                setTimeout(() => {
-                    message.style.animation = 'slideOut 0.3s ease-out forwards';
-                    setTimeout(() => message.remove(), 300);
-                }, 5000);
-            });
-        });
+        // Check for saved theme
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
 
-        // Adiciona animação de slideOut
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideOut {
-                from { opacity: 1; transform: translateY(0); }
-                to { opacity: 0; transform: translateY(-10px); }
-            }
-        `;
-        document.head.appendChild(style);
+        // Atualizar notificações a cada 30 segundos
+        function updateNotifications() {
+            fetch('/get-notifications')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('notifications-container');
+                    const count = document.getElementById('notification-count');
+                    
+                    container.innerHTML = '';
+                    count.textContent = data.length;
+                    
+                    data.forEach(notif => {
+                        const item = document.createElement('div');
+                        item.className = 'px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
+                        item.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span>${notif.mensagem}</span>
+                                <button onclick="deleteNotification(${notif.id})" class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                });
+        }
+
+        function deleteNotification(id) {
+            fetch(`/delete-notification/${id}`, { method: 'POST' })
+                .then(() => updateNotifications());
+        }
+
+        function clearNotifications() {
+            fetch('/clear-notifications', { method: 'POST' })
+                .then(() => updateNotifications());
+        }
+
+        // Atualizar notificações inicialmente e a cada 30 segundos
+        if (document.getElementById('notifications-container')) {
+            updateNotifications();
+            setInterval(updateNotifications, 30000);
+        }
     </script>
-
-    <script src="{{ url_for('static', filename='js/email.js') }}"></script>
 </body>
 </html>
