@@ -1,6 +1,18 @@
 from app import db
+from app.models import Chamado
 
-# Adicionar coluna criticidade na tabela chamado
-with db.engine.connect() as conn:
-    conn.execute("ALTER TABLE chamado ADD COLUMN criticidade VARCHAR(20) DEFAULT 'Média' AFTER status;")
-    print("Coluna 'criticidade' adicionada com sucesso!")
+def add_criticidade_column():
+    with db.engine.connect() as conn:
+        try:
+            # Verifica se a coluna já existe
+            result = conn.execute("SELECT * FROM pragma_table_info('chamado') WHERE name='criticidade'")
+            if not result.fetchone():
+                conn.execute("ALTER TABLE chamado ADD COLUMN criticidade VARCHAR(20) DEFAULT 'Média' AFTER status;")
+                print("Coluna 'criticidade' adicionada com sucesso!")
+            else:
+                print("Coluna 'criticidade' já existe!")
+        except Exception as e:
+            print(f"Erro ao adicionar coluna: {str(e)}")
+            
+if __name__ == '__main__':
+    add_criticidade_column()

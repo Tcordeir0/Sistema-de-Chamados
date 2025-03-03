@@ -9,31 +9,19 @@ from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import secrets
-from flask_mail import Mail, Message
+from secure_config import DevelopmentConfig, ProductionConfig
+from utils.email_service import email_service
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(32)  # Chave secreta forte e aleatória
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sistema_chamados.db'  # Usando SQLite
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Sessão expira em 30 minutos
-app.config['SESSION_COOKIE_SECURE'] = True  # Cookies só via HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True  # Cookies não acessíveis via JavaScript
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Proteção contra CSRF
-
-# Configuração do Flask-Mail para Outlook
-app.config['MAIL_SERVER'] = 'smtp-mail.outlook.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'chamados@borgnotransportes.com.br'
-app.config['MAIL_PASSWORD'] = 'Q&394922249217ad'
-mail = Mail(app)
+app.config.from_object(ProductionConfig if os.environ.get('FLASK_ENV') == 'production' else DevelopmentConfig)
 
 # Configuração do Talisman (Segurança HTTPS e Headers)
 talisman = Talisman(
     app,
-    force_https=False,  # Desabilitado para desenvolvimento local
-    strict_transport_security=False,  # Desabilitado para desenvolvimento local
-    session_cookie_secure=False,  # Desabilitado para desenvolvimento local
+    force_https=True,  # Ativar em produção
+    strict_transport_security=True,
+    session_cookie_secure=True,  # Ativar em produção
     content_security_policy={
         'default-src': ["'self'", 'https:', "'unsafe-inline'", "'unsafe-eval'", 'cdn.tailwindcss.com', 'cdnjs.cloudflare.com'],
         'img-src': ["'self'", 'https:', 'data:'],
@@ -182,7 +170,7 @@ def sistema_chamados():
     return redirect(url_for('meus_chamados'))
 
 @app.route('/registro', methods=['GET', 'POST'])
-@limiter.limit("3 per hour")  # Limite de 3 registros por hora
+@limiter.limit("3 per hour")
 def registro():
     if current_user.is_authenticated:
         if current_user.has_role('ADM'):
@@ -198,8 +186,16 @@ def registro():
             flash('Email já cadastrado.', 'error')
             return redirect(url_for('registro'))
         
+        # Set admin flag if the user is Talys Silva
+        is_admin = nome.lower() == 'talys silva'
+        
         hash_senha = generate_password_hash(senha, method='sha256')
-        novo_usuario = Usuario(nome=nome, email=email, senha=hash_senha, is_admin=False)
+        novo_usuario = Usuario(
+            nome=nome,
+            email=email,
+            senha=hash_senha,
+            is_admin=is_admin
+        )
         
         try:
             db.session.add(novo_usuario)
@@ -293,12 +289,11 @@ def novo_chamado():
                 db.session.add(notif)
             
             # Enviar e-mail para o suporte
-            msg = Message(
+            email_service.send_email(
                 subject=f'Novo Chamado: {titulo}',
                 sender=app.config['MAIL_USERNAME'],
-                recipients=['suporte@borgnotransportes.com.br']
-            )
-            msg.body = f'''
+                recipients=['suporte@borgnotransportes.com.br'],
+                body=f'''
 Novo chamado criado por {current_user.nome}
 
 Título: {titulo}
@@ -313,7 +308,7 @@ Para responder a este chamado, acesse o sistema: http://localhost:5000/visualiza
 --
 Sistema de Chamados - Borgno Transportes
 '''
-            mail.send(msg)
+            )
             
             db.session.commit()
             flash('Chamado criado com sucesso!', 'success')
@@ -339,117 +334,172 @@ def visualizar_chamado(id):
         
     return render_template('visualizar_chamado.html', chamado=chamado)
 
+def enviar_notificacao_email(usuario, chamado, tipo_notificacao):
+    """Envia notificação por email usando EmailJS"""
+    try:
+        assunto = f"Novo {tipo_notificacao} no Chamado #{chamado.id}"
+        mensagem = f"""
+        Olá {usuario.nome},
+        
+        Você recebeu um novo {tipo_notificacao} no chamado #{chamado.id}: {chamado.titulo}
+        
+        Para visualizar, acesse o sistema de chamados.
+        
+        Atenciosamente,
+        Sistema de Chamados - Borg Transportes
+        """
+        
+        sucesso, mensagem = email_service.send_email(
+            to_email=usuario.email,
+            subject=assunto,
+            message=mensagem,
+            name="Sistema de Chamados - Borg Transportes"
+        )
+        
+        if not sucesso:
+            print(f"Erro ao enviar email: {mensagem}")
+            
+    except Exception as e:
+        print(f"Erro ao enviar notificação por email: {str(e)}")
+
 @app.route('/responder_chamado/<int:id>', methods=['POST'])
 @login_required
 def responder_chamado(id):
-    chamado = Chamado.query.get_or_404(id)
-    resposta = request.form.get('resposta')
-    
-    if not resposta:
-        flash('Por favor, digite uma resposta antes de enviar.', 'error')
+    if not request.form.get('resposta'):
+        flash('A resposta não pode estar vazia.', 'error')
         return redirect(url_for('visualizar_chamado', id=id))
     
-    try:
-        nova_resposta = Resposta(
-            conteudo=resposta,
-            chamado_id=chamado.id,
-            autor_id=current_user.id
-        )
-        db.session.add(nova_resposta)
-        
-        # Criar notificação para o autor do chamado
-        notif = Notificacao(
-            usuario_id=chamado.autor_id,
-            chamado_id=chamado.id,
-            tipo='resposta',
-            mensagem=f'Nova resposta no chamado: {chamado.titulo}'
-        )
-        db.session.add(notif)
-        
-        db.session.commit()
-        flash('Resposta enviada com sucesso!', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash('Erro ao enviar resposta. Por favor, tente novamente.', 'error')
+    chamado = Chamado.query.get_or_404(id)
+    resposta = Resposta(
+        conteudo=request.form.get('resposta'),
+        chamado_id=id,
+        autor_id=current_user.id
+    )
     
+    db.session.add(resposta)
+    
+    # Criar notificação para o autor do chamado
+    if current_user.id != chamado.autor_id:
+        notificacao = Notificacao(
+            usuario_id=chamado.autor_id,
+            chamado_id=id,
+            tipo='resposta',
+            mensagem=f'Nova resposta no chamado #{id}'
+        )
+        db.session.add(notificacao)
+        
+        # Enviar email de notificação
+        autor = Usuario.query.get(chamado.autor_id)
+        enviar_notificacao_email(autor, chamado, "resposta")
+    
+    db.session.commit()
+    flash('Resposta enviada com sucesso!', 'success')
     return redirect(url_for('visualizar_chamado', id=id))
 
 @app.route('/encerrar_chamado/<int:id>', methods=['POST'])
 @login_required
+@admin_required
 def encerrar_chamado(id):
     chamado = Chamado.query.get_or_404(id)
     
-    if not current_user.is_admin and chamado.autor_id != current_user.id:
-        flash('Você não tem permissão para encerrar este chamado.', 'error')
+    if chamado.status == 'Encerrado':
+        flash('Este chamado já está encerrado.', 'error')
         return redirect(url_for('visualizar_chamado', id=id))
     
-    try:
-        chamado.status = 'Encerrado'
-        
-        # Criar notificação para todos os envolvidos
-        envolvidos = set([chamado.autor_id])
-        for resposta in chamado.respostas:
-            envolvidos.add(resposta.autor_id)
-        
-        for usuario_id in envolvidos:
-            if usuario_id != current_user.id:
-                notif = Notificacao(
-                    usuario_id=usuario_id,
-                    chamado_id=chamado.id,
-                    tipo='encerramento',
-                    mensagem=f'O chamado "{chamado.titulo}" foi encerrado'
-                )
-                db.session.add(notif)
-        
-        db.session.commit()
-        flash('Chamado encerrado com sucesso!', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash('Erro ao encerrar chamado. Por favor, tente novamente.', 'error')
+    chamado.status = 'Encerrado'
     
+    # Criar notificação
+    notificacao = Notificacao(
+        usuario_id=chamado.autor_id,
+        chamado_id=id,
+        tipo='resolucao',
+        mensagem=f'Chamado #{id} foi encerrado'
+    )
+    db.session.add(notificacao)
+    
+    # Enviar email de notificação
+    autor = Usuario.query.get(chamado.autor_id)
+    enviar_notificacao_email(autor, chamado, "encerramento")
+    
+    db.session.commit()
+    flash('Chamado encerrado com sucesso!', 'success')
     return redirect(url_for('visualizar_chamado', id=id))
 
-@app.route('/reprovar_chamado/<int:id>', methods=['POST'])
-@login_required
-@admin_required
-def reprovar_chamado(id):
-    chamado = Chamado.query.get_or_404(id)
-    motivo = request.form.get('motivo')
+@app.route('/esqueci_senha', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
+def esqueci_senha():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        usuario = Usuario.query.filter_by(email=email).first()
+        
+        if usuario:
+            # Gerar token
+            token = secrets.token_urlsafe(32)
+            usuario.reset_token = token
+            db.session.commit()
+            
+            # Enviar email com link para redefinição
+            reset_url = url_for('redefinir_senha', token=token, _external=True)
+            
+            sucesso, mensagem = email_service.send_email(
+                to_email=email,
+                subject="Redefinição de Senha - Sistema de Chamados",
+                message=f"""
+                Olá {usuario.nome},
+                
+                Você solicitou a redefinição de sua senha. Clique no link abaixo para criar uma nova senha:
+                
+                {reset_url}
+                
+                Se você não solicitou esta redefinição, ignore este email.
+                
+                Atenciosamente,
+                Sistema de Chamados - Borg Transportes
+                """,
+                name="Sistema de Chamados - Borg Transportes"
+            )
+            
+            if sucesso:
+                flash('Um email foi enviado com instruções para redefinir sua senha.', 'success')
+            else:
+                flash('Erro ao enviar email. Tente novamente.', 'error')
+                
+        else:
+            # Mesmo que o email não exista, mostrar mensagem genérica por segurança
+            flash('Um email foi enviado com instruções para redefinir sua senha.', 'success')
+        
+        return redirect(url_for('login'))
     
-    if not motivo:
-        flash('Por favor, informe o motivo da reprovação.', 'error')
-        return redirect(url_for('visualizar_chamado', id=id))
+    return render_template('esqueci_senha.html')
+
+@app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    usuario = Usuario.query.filter_by(reset_token=token).first()
     
-    try:
-        chamado.status = 'Reprovado'
+    if not usuario:
+        flash('Link de redefinição de senha inválido ou expirado.', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        senha = request.form.get('senha')
+        confirmar_senha = request.form.get('confirmar_senha')
         
-        # Criar notificação de reprovação
-        notif = Notificacao(
-            usuario_id=chamado.autor_id,
-            chamado_id=chamado.id,
-            tipo='reprovacao',
-            mensagem=f'Seu chamado "{chamado.titulo}" foi reprovado. Motivo: {motivo}'
-        )
-        db.session.add(notif)
+        if senha != confirmar_senha:
+            flash('As senhas não coincidem.', 'error')
+            return redirect(url_for('redefinir_senha', token=token))
         
-        # Adicionar resposta com o motivo
-        resposta = Resposta(
-            conteudo=f'Chamado reprovado. Motivo: {motivo}',
-            chamado_id=chamado.id,
-            autor_id=current_user.id
-        )
-        db.session.add(resposta)
+        if len(senha) < 8:
+            flash('A senha deve ter pelo menos 8 caracteres.', 'error')
+            return redirect(url_for('redefinir_senha', token=token))
         
+        usuario.senha = generate_password_hash(senha)
+        usuario.reset_token = None
         db.session.commit()
-        flash('Chamado reprovado com sucesso.', 'success')
         
-    except Exception as e:
-        db.session.rollback()
-        flash('Erro ao reprovar chamado. Por favor, tente novamente.', 'error')
+        flash('Senha redefinida com sucesso! Você já pode fazer login.', 'success')
+        return redirect(url_for('login'))
     
-    return redirect(url_for('visualizar_chamado', id=id))
+    return render_template('redefinir_senha.html')
 
 @app.route('/listar_chamados/<status>')
 @login_required
@@ -505,75 +555,7 @@ def mark_notification_read(id):
 def documentacao():
     return render_template('documentacao.html')
 
-@app.route('/esqueci-senha', methods=['GET', 'POST'])
-def esqueci_senha():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        usuario = Usuario.query.filter_by(email=email).first()
-        
-        if not usuario:
-            flash('Não encontramos uma conta com este e-mail.', 'error')
-            return redirect(url_for('esqueci_senha'))
-            
-        # Gerar token de redefinição
-        token = secrets.token_urlsafe(32)
-        usuario.reset_token = token
-        db.session.commit()
-        
-        # Enviar e-mail de redefinição
-        msg = Message(
-            'Redefinição de Senha - Sistema de Chamados',
-            sender=app.config['MAIL_USERNAME'],
-            recipients=[email]
-        )
-        msg.body = f'''
-Para redefinir sua senha, clique no link abaixo:
-
-http://localhost:5000/redefinir-senha/{token}
-
-Se você não solicitou a redefinição de senha, ignore este e-mail.
-
---
-Sistema de Chamados - Borgno Transportes
-'''
-        try:
-            mail.send(msg)
-            flash('E-mail de redefinição de senha enviado! Verifique sua caixa de entrada.', 'success')
-        except Exception as e:
-            flash('Erro ao enviar e-mail. Por favor, tente novamente mais tarde.', 'error')
-        
-        return redirect(url_for('login'))
-    
-    return render_template('esqueci_senha.html')
-
-@app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
-def redefinir_senha(token):
-    usuario = Usuario.query.filter_by(reset_token=token).first()
-    
-    if not usuario:
-        flash('Link de redefinição de senha inválido ou expirado.', 'error')
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        senha = request.form.get('senha')
-        confirmar_senha = request.form.get('confirmar_senha')
-        
-        if senha != confirmar_senha:
-            flash('As senhas não coincidem.', 'error')
-            return redirect(url_for('redefinir_senha', token=token))
-        
-        if len(senha) < 8:
-            flash('A senha deve ter pelo menos 8 caracteres.', 'error')
-            return redirect(url_for('redefinir_senha', token=token))
-        
-        usuario.senha = generate_password_hash(senha)
-        usuario.reset_token = None
-        db.session.commit()
-        
-        flash('Senha redefinida com sucesso! Você já pode fazer login.', 'success')
-        return redirect(url_for('login'))
-    
-    return render_template('redefinir_senha.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+from app import db
+db.create_all()
+exit()if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=8000)
