@@ -1,0 +1,13 @@
+Flask==2.0.1
+Flask-SQLAlchemy==2.5.1
+Flask-Login==0.5.0
+Flask-Mail==0.9.1
+Flask-Talisman==1.0.0
+Flask-Limiter==2.4.0
+mysql-connector-python==8.0.26
+python-dotenv==0.19.0
+pytz==2021.1
+Werkzeug==2.0.1
+SQLAlchemy==1.4.36
+cryptography>=41.0.0
+requests>=2.31.0

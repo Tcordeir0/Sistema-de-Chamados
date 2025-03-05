@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-16">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <a href="{{ url_for('home') }}" class="text-white text-xl font-bold flex items-center">
+                        <i class="fas fa-truck text-blue-500 mr-2"></i>
+                        Borgno Transportes
+                    </a>
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="{{ url_for('documentacao') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-book mr-2"></i>Documentação
+                        </a>
+                        {% if current_user.has_role('ADM') %}
+                        <a href="{{ url_for('sistema_chamados') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-headset mr-2"></i>Área de Chamados
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-400">Bem-vindo, {{ current_user.nome }}</span>
+                <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Sair
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Welcome Section -->
+            <section class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">Central de Atendimento</h2>
+                <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+                    Acesse nossos serviços e entre em contato com nossa equipe
+                </p>
+            </section>
+
+            <!-- Services Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Chamados Card -->
+                <a href="{{ url_for('sistema_chamados') }}" class="transform hover:scale-105 transition-transform">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                                <i class="fas fa-headset text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold">Área de Chamados</h3>
+                        </div>
+                        <p class="text-gray-200">
+                            Acesse o sistema de chamados para suporte e atendimento
+                        </p>
+                    </div>
+                </a>
+
+                <!-- Documentação Card -->
+                <a href="{{ url_for('documentacao') }}" class="transform hover:scale-105 transition-transform">
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                                <i class="fas fa-book text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold">Documentação</h3>
+                        </div>
+                        <p class="text-gray-200">
+                            Acesse manuais e documentos importantes
+                        </p>
+                    </div>
+                </a>
+
+                <!-- Contatos Card -->
+                <div class="transform hover:scale-105 transition-transform">
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                                <i class="fas fa-address-book text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold">Contatos</h3>
+                        </div>
+                        <p class="text-gray-200">
+                            Informações de contato da nossa equipe
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <section class="mt-16">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div class="bg-gray-800/50 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400">Total de Chamados</p>
+                                <h4 class="text-2xl font-bold">{{ total_chamados }}</h4>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-ticket-alt text-blue-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800/50 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400">Chamados Abertos</p>
+                                <h4 class="text-2xl font-bold">{{ chamados_abertos }}</h4>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800/50 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400">Chamados Encerrados</p>
+                                <h4 class="text-2xl font-bold">{{ chamados_encerrados }}</h4>
+                            </div>
+                            <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800/50 rounded-xl p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400">Chamados Reprovados</p>
+                                <h4 class="text-2xl font-bold">{{ chamados_reprovados }}</h4>
+                            </div>
+                            <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-times-circle text-red-500"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+{% endblock %}

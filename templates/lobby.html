@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-truck text-blue-500"></i>
+                <h1 class="text-xl font-bold">Borgno Transportes</h1>
+            </div>
+            <h2 class="text-sm md:text-base">Portal de Serviços</h2>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto py-12 px-4">
+        <div class="text-center mb-12">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                Bem-vindo ao Portal de Serviços
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Selecione uma das opções abaixo para acessar os serviços disponíveis
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <!-- Chamados Card -->
+            <a href="{{ url_for('sistema_chamados') }}" class="block">
+                <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105 cursor-pointer border border-gray-100 hover:border-blue-200">
+                    <div class="p-6 flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-headset text-2xl text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Sistema de Chamados</h3>
+                        <p class="text-gray-600 mb-4">
+                            Abra um novo chamado para suporte técnico, dúvidas ou solicitações
+                        </p>
+                        <button class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            Acessar
+                        </button>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Documentos Card -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105 cursor-pointer border border-gray-100 hover:border-blue-200">
+                <div class="p-6 flex flex-col items-center text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-file-alt text-2xl text-green-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Documentos</h3>
+                    <p class="text-gray-600 mb-4">
+                        Acesse documentos, manuais e formulários importantes
+                    </p>
+                    <button class="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                        Acessar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contatos Card -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105 cursor-pointer border border-gray-100 hover:border-blue-200">
+                <div class="p-6 flex flex-col items-center text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-users text-2xl text-purple-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Contatos</h3>
+                    <p class="text-gray-600 mb-4">
+                        Encontre informações de contato dos departamentos
+                    </p>
+                    <button class="mt-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                        Acessar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Info Section -->
+        <div class="mt-16 bg-blue-50 rounded-lg p-8 max-w-5xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/3 mb-6 md:mb-0 flex justify-center">
+                    <div class="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center">
+                        <i class="fas fa-truck text-3xl text-white"></i>
+                    </div>
+                </div>
+                <div class="md:w-2/3 md:pl-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">Borgno Transportes</h3>
+                    <p class="text-gray-600 mb-4">
+                        Somos especializados em soluções logísticas eficientes e confiáveis para sua empresa.
+                        Nossa equipe está sempre pronta para atender suas necessidades.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

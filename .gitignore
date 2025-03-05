@@ -1,0 +1,64 @@
+# Dependências
+node_modules/
+package-lock.json
+
+# Arquivos de ambiente e chaves
+.env
+.key
+*.key
+secure_config.py
+generate_keys.py
+generate_env.py
+encrypt_credentials.py
+create_db.py
+
+# Scripts de inicialização com dados sensíveis
+create_admin.py
+reset_admin.py
+recreate_db.py
+init_db.py
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambiente virtual
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Build e cache
+dist/
+build/
+*.pyc
+.cache/
+.pytest_cache/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+
+# Arquivos de configuração com possíveis dados sensíveis
+config.local.py
+instance/
+credentials.json

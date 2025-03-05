@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-16">
+    <div class="text-center">
+        <div class="mb-8">
+            <i class="fas fa-exclamation-triangle text-6xl text-yellow-500"></i>
+        </div>
+        <h1 class="text-4xl font-bold mb-4">Erro Interno</h1>
+        <p class="text-xl text-gray-400 mb-8">Ocorreu um erro interno no servidor. Por favor, tente novamente mais tarde.</p>
+        <a href="{{ url_for('home') }}" class="btn-primary">
+            <i class="fas fa-home mr-2"></i>Voltar para a página inicial
+        </a>
+    </div>
+</div>
+{% endblock %}

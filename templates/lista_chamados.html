@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chamados.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="chamados-container">
+    <div class="chamados-header">
+        <h1 class="chamados-title">
+            <i class="fas fa-list-alt"></i>
+            {{ titulo }}
+        </h1>
+        
+        <div class="chamados-actions">
+            <input type="text" class="chamados-search" placeholder="Buscar chamados...">
+            
+            <div class="chamados-filters">
+                {% if current_user.has_role('ADM') %}
+                <button class="filter-btn {% if titulo == 'Chamados Abertos' %}active{% endif %}" data-status="aberto">
+                    <i class="fas fa-envelope-open"></i>
+                    Abertos
+                </button>
+                <button class="filter-btn {% if titulo == 'Chamados Encerrados' %}active{% endif %}" data-status="fechado">
+                    <i class="fas fa-check-circle"></i>
+                    Encerrados
+                </button>
+                <button class="filter-btn {% if titulo == 'Todos os Chamados' %}active{% endif %}" data-status="todos">
+                    <i class="fas fa-list"></i>
+                    Todos
+                </button>
+                {% endif %}
+            </div>
+            
+            <a href="{{ url_for('novo_chamado') }}" class="new-chamado-btn">
+                <i class="fas fa-plus"></i>
+                Novo Chamado
+            </a>
+        </div>
+    </div>
+
+    <div class="chamados-table-container">
+        <table class="chamados-table">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-hashtag"></i> ID</th>
+                    <th><i class="fas fa-heading"></i> Título</th>
+                    <th><i class="fas fa-user"></i> Solicitante</th>
+                    <th><i class="fas fa-calendar-alt"></i> Data</th>
+                    <th><i class="fas fa-info-circle"></i> Status</th>
+                    <th><i class="fas fa-cogs"></i> Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chamado in chamados %}
+                <tr>
+                    <td>{{ chamado.id }}</td>
+                    <td class="chamado-titulo">{{ chamado.titulo }}</td>
+                    <td>{{ chamado.autor.nome }}</td>
+                    <td>{{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        <span class="status-badge {% if chamado.status == 'Aberto' %}aberto{% else %}fechado{% endif %} chamado-status">
+                            <i class="fas {% if chamado.status == 'Aberto' %}fa-clock{% else %}fa-check-circle{% endif %}"></i>
+                            {{ chamado.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" class="action-btn view-btn" title="Visualizar">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if chamado.status == 'Aberto' and current_user.has_role('ADM') %}
+                            <a href="{{ url_for('encerrar_chamado', id=chamado.id) }}" class="action-btn close-btn" title="Encerrar">
+                                <i class="fas fa-check"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chamados.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% if current_user.is_authenticated %}
+<nav class="bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <a href="{{ url_for('home') }}" class="text-white font-bold text-xl">Sistema de Chamados</a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('dashboard') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                        {% endif %}
+                        <a href="{{ url_for('novo_chamado') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Novo Chamado</a>
+                        <a href="{{ url_for('meus_chamados') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Meus Chamados</a>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center">
+                <span class="text-gray-300 mr-4">{{ current_user.nome }}</span>
+                <a href="{{ url_for('logout') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Sair</a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endif %}
