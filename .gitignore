@@ -1,5 +1,6 @@
-"venv/" 
-"__pycache__/" 
-"*.pyc" 
-".env" 
+echo "venv/" > .gitignore
+echo "__pycache__/" >> .gitignore
+echo "*.pyc" >> .gitignore
+echo ".env" >> .gitignoregit branch main
+git checkout main
 node_modules
