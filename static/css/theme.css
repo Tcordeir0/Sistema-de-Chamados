@@ -1,0 +1,253 @@
+/* Estilos para temas claro/escuro com transições suaves */
+
+/* Variáveis de cores para tema escuro (padrão) */
+:root {
+    /* Cores primárias */
+    --bg-primary: #121826;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-accent: #1e40af;
+    
+    /* Cores de texto */
+    --text-primary: #f8fafc;
+    --text-secondary: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-accent: #60a5fa;
+    
+    /* Cores de ação */
+    --accent-color: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-focus: #1d4ed8;
+    
+    /* Cores de estado */
+    --success-color: #10b981;
+    --success-light: #059669;
+    --warning-color: #f59e0b;
+    --warning-light: #d97706;
+    --danger-color: #ef4444;
+    --danger-light: #dc2626;
+    --info-color: #0ea5e9;
+    --info-light: #0284c7;
+    
+    /* Cores de borda e sombra */
+    --border-color: #334155;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --shadow-light: rgba(0, 0, 0, 0.25);
+    
+    /* Cores de card e componentes */
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --input-bg: #1e293b;
+    --input-border: #475569;
+    --input-focus: #3b82f6;
+    
+    /* Cores de notificação */
+    --notification-bg: #1e293b;
+    --notification-border: #334155;
+}
+
+/* Variáveis de cores para tema claro */
+.light {
+    /* Cores primárias */
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-tertiary: #e2e8f0;
+    --bg-accent: #dbeafe;
+    
+    /* Cores de texto */
+    --text-primary: #0f172a;
+    --text-secondary: #1e293b;
+    --text-muted: #64748b;
+    --text-accent: #2563eb;
+    
+    /* Cores de ação */
+    --accent-color: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-focus: #1e40af;
+    
+    /* Cores de estado */
+    --success-color: #059669;
+    --success-light: #10b981;
+    --warning-color: #d97706;
+    --warning-light: #f59e0b;
+    --danger-color: #dc2626;
+    --danger-light: #ef4444;
+    --info-color: #0284c7;
+    --info-light: #0ea5e9;
+    
+    /* Cores de borda e sombra */
+    --border-color: #cbd5e0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-light: rgba(0, 0, 0, 0.05);
+    
+    /* Cores de card e componentes */
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --input-bg: #ffffff;
+    --input-border: #cbd5e0;
+    --input-focus: #2563eb;
+    
+    /* Cores de notificação */
+    --notification-bg: #ffffff;
+    --notification-border: #e2e8f0;
+}
+
+/* Aplicação das variáveis de cores com transições suaves */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Cabeçalho e navegação */
+nav, .navbar, .sidebar {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Cards e containers */
+.card, .container-card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    box-shadow: 0 4px 6px var(--shadow-light), 0 1px 3px var(--shadow-light);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    box-shadow: 0 10px 15px var(--shadow-light), 0 4px 6px var(--shadow-light);
+    transform: translateY(-2px);
+}
+
+/* Botões */
+button, .btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:focus {
+    background-color: var(--accent-focus);
+    box-shadow: 0 0 0 3px var(--accent-color);
+}
+
+/* Inputs e formulários */
+input, select, textarea {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-primary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Tabelas */
+table {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+tr:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Notificações */
+.notification {
+    background-color: var(--notification-bg);
+    border-color: var(--notification-border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animações para componentes */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.slide-in-up {
+    animation: slideInUp 0.5s ease-out forwards;
+}
+
+.slide-in-down {
+    animation: slideInDown 0.5s ease-out forwards;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Tema escuro/claro toggle button */
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn:hover {
+    background-color: var(--accent-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.theme-toggle-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-color);
+}
+
+/* Responsividade para dispositivos móveis */
+@media (max-width: 640px) {
+    .card, .container-card {
+        padding: 1rem;
+    }
+    
+    .theme-toggle-btn span {
+        display: none;
+    }
+    
+    .theme-toggle-btn {
+        padding: 0.5rem;
+    }
+}

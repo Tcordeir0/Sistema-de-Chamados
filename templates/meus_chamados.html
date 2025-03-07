@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center space-x-4">
+            <a href="{{ url_for('home') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Meus Chamados</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="{{ url_for('exportar_chamados_pdf') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+            </a>
+            <a href="{{ url_for('novo_chamado') }}" 
+               class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
+                <i class="fas fa-plus mr-2"></i> Novo Chamado
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros Avançados -->
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 mb-6">
+        <div x-data="{ filtersOpen: false }" class="w-full">
+            <button @click="filtersOpen = !filtersOpen" class="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-left text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring focus-visible:ring-indigo-500 focus-visible:ring-opacity-50">
+                <span class="flex items-center">
+                    <i class="fas fa-filter mr-2"></i>
+                    Filtros Avançados
+                </span>
+                <i class="fas" :class="filtersOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+            
+            <div x-show="filtersOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="mt-4">
+                <form id="filter-form" method="GET" action="{{ url_for('meus_chamados') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Status -->
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                        <select id="status" name="status" class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">Todos</option>
+                            <option value="Aberto" {% if request.args.get('status') == 'Aberto' %}selected{% endif %}>Aberto</option>
+                            <option value="Em Andamento" {% if request.args.get('status') == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                            <option value="Encerrado" {% if request.args.get('status') == 'Encerrado' %}selected{% endif %}>Encerrado</option>
+                            <option value="Reprovado" {% if request.args.get('status') == 'Reprovado' %}selected{% endif %}>Reprovado</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Criticidade -->
+                    <div>
+                        <label for="criticidade" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Criticidade</label>
+                        <select id="criticidade" name="criticidade" class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">Todas</option>
+                            <option value="Baixa" {% if request.args.get('criticidade') == 'Baixa' %}selected{% endif %}>Baixa</option>
+                            <option value="Média" {% if request.args.get('criticidade') == 'Média' %}selected{% endif %}>Média</option>
+                            <option value="Alta" {% if request.args.get('criticidade') == 'Alta' %}selected{% endif %}>Alta</option>
+                            <option value="Urgente" {% if request.args.get('criticidade') == 'Urgente' %}selected{% endif %}>Urgente</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Data Início -->
+                    <div>
+                        <label for="data_inicio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data Início</label>
+                        <input type="date" id="data_inicio" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}" class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <!-- Data Fim -->
+                    <div>
+                        <label for="data_fim" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data Fim</label>
+                        <input type="date" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}" class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <!-- Busca por texto -->
+                    <div class="md:col-span-2">
+                        <label for="busca" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Busca por Título ou Descrição</label>
+                        <input type="text" id="busca" name="busca" value="{{ request.args.get('busca', '') }}" placeholder="Digite para buscar..." class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div class="md:col-span-2 flex justify-end space-x-2">
+                        <button type="reset" onclick="window.location='{{ url_for('meus_chamados') }}'" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                            <i class="fas fa-undo mr-1"></i> Limpar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-search mr-1"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ordenação -->
+    <div class="flex justify-end mb-4">
+        <div class="relative inline-block text-left">
+            <div x-data="{ open: false }">
+                <button @click="open = !open" type="button" class="inline-flex justify-center w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
+                    <i class="fas fa-sort mr-2"></i>
+                    Ordenar por
+                    <i class="fas fa-chevron-down ml-2"></i>
+                </button>
+                
+                <div x-show="open" x-transition:enter="transition ease-out duration-100" 
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     @click.outside="open = false"
+                     class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-10">
+                    <div class="py-1">
+                        <a href="{{ url_for('meus_chamados') }}?sort=id&order=asc{% for key, value in request.args.items() %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" @click="open = false" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            ID (Crescente)
+                        </a>
+                        <a href="{{ url_for('meus_chamados') }}?sort=id&order=desc{% for key, value in request.args.items() %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" @click="open = false" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            ID (Decrescente)
+                        </a>
+                        <a href="{{ url_for('meus_chamados') }}?sort=data&order=asc{% for key, value in request.args.items() %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" @click="open = false" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Data (Mais antiga)
+                        </a>
+                        <a href="{{ url_for('meus_chamados') }}?sort=data&order=desc{% for key, value in request.args.items() %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" @click="open = false" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Data (Mais recente)
+                        </a>
+                        <a href="{{ url_for('meus_chamados') }}?sort=criticidade&order=asc{% for key, value in request.args.items() %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" @click="open = false" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Criticidade (Crescente)
+                        </a>
+                        <a href="{{ url_for('meus_chamados') }}?sort=criticidade&order=desc{% for key, value in request.args.items() %}{% if key != 'sort' and key != 'order' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" @click="open = false" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Criticidade (Decrescente)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            ID
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Título
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Criticidade
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Data
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% if chamados %}
+                    {% for chamado in chamados %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ chamado.id }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ chamado.titulo }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-sm font-medium rounded-full 
+                                {% if chamado.status == 'Aberto' %}
+                                    bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-500/30
+                                {% elif chamado.status == 'Em Andamento' %}
+                                    bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-500/30
+                                {% elif chamado.status == 'Encerrado' %}
+                                    bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 border border-purple-500/30
+                                {% elif chamado.status == 'Reprovado' %}
+                                    bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-500/30
+                                {% endif %}">
+                                {{ chamado.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-sm font-medium rounded-full 
+                                {% if chamado.criticidade == 'Baixa' %}
+                                    bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif chamado.criticidade == 'Média' %}
+                                    bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                {% elif chamado.criticidade == 'Alta' %}
+                                    bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                {% elif chamado.criticidade == 'Urgente' %}
+                                    bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse
+                                {% endif %}">
+                                {{ chamado.criticidade }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" 
+                               class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200">
+                                <i class="fas fa-eye mr-1"></i> Visualizar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            Nenhum chamado encontrado.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

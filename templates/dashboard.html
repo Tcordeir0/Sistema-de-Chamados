@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center space-x-4">
+            <a href="{{ url_for('home') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:border-gray-900 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            </a>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        </div>
+        <a href="{{ url_for('novo_chamado') }}" 
+           class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
+            <i class="fas fa-plus mr-2"></i> Novo Chamado
+        </a>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
+                    <i class="fas fa-ticket-alt text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Chamados</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ total_chamados }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <i class="fas fa-clock text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Em Andamento</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ em_andamento }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 dark:bg-red-900">
+                    <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Urgentes</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ urgentes }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-gray-100 dark:bg-gray-900">
+                    <i class="fas fa-check-circle text-gray-600 dark:text-gray-400"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Concluídos</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ concluidos }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros Avançados -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden mb-6">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Filtros Avançados</h2>
+        </div>
+        <div class="p-4" x-data="{ filtersOpen: false }">
+            <button @click="filtersOpen = !filtersOpen" class="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-left text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-4">
+                <span><i class="fas fa-filter mr-2"></i> Mostrar/Ocultar Filtros</span>
+                <i class="fas" :class="filtersOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+            
+            <div x-show="filtersOpen" x-transition class="mt-2">
+                <form action="{{ url_for('dashboard') }}" method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                            <select id="status" name="status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="">Todos</option>
+                                <option value="Aberto" {% if request.args.get('status') == 'Aberto' %}selected{% endif %}>Aberto</option>
+                                <option value="Em Andamento" {% if request.args.get('status') == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                <option value="Encerrado" {% if request.args.get('status') == 'Encerrado' %}selected{% endif %}>Encerrado</option>
+                                <option value="Reprovado" {% if request.args.get('status') == 'Reprovado' %}selected{% endif %}>Reprovado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="criticidade" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Criticidade</label>
+                            <select id="criticidade" name="criticidade" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="">Todas</option>
+                                <option value="Baixa" {% if request.args.get('criticidade') == 'Baixa' %}selected{% endif %}>Baixa</option>
+                                <option value="Média" {% if request.args.get('criticidade') == 'Média' %}selected{% endif %}>Média</option>
+                                <option value="Alta" {% if request.args.get('criticidade') == 'Alta' %}selected{% endif %}>Alta</option>
+                                <option value="Urgente" {% if request.args.get('criticidade') == 'Urgente' %}selected{% endif %}>Urgente</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="data_inicio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data Início</label>
+                            <input type="date" id="data_inicio" name="data_inicio" value="{{ request.args.get('data_inicio', '') }}" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="data_fim" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data Fim</label>
+                            <input type="date" id="data_fim" name="data_fim" value="{{ request.args.get('data_fim', '') }}" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="busca" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Busca</label>
+                            <div class="mt-1 flex rounded-md shadow-sm">
+                                <input type="text" id="busca" name="busca" value="{{ request.args.get('busca', '') }}" placeholder="Buscar por título ou descrição" class="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-md sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ordenar por</label>
+                            <div class="mt-1 grid grid-cols-2 gap-2">
+                                <select id="sort" name="sort" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="data" {% if request.args.get('sort') == 'data' or not request.args.get('sort') %}selected{% endif %}>Data</option>
+                                    <option value="id" {% if request.args.get('sort') == 'id' %}selected{% endif %}>ID</option>
+                                    <option value="criticidade" {% if request.args.get('sort') == 'criticidade' %}selected{% endif %}>Criticidade</option>
+                                </select>
+                                <select id="order" name="order" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="desc" {% if request.args.get('order') == 'desc' or not request.args.get('order') %}selected{% endif %}>Decrescente</option>
+                                    <option value="asc" {% if request.args.get('order') == 'asc' %}selected{% endif %}>Crescente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="md:col-span-3 flex justify-end space-x-2">
+                        <button type="reset" onclick="window.location='{{ url_for('dashboard') }}'" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                            <i class="fas fa-undo mr-1"></i> Limpar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-search mr-1"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Chamados -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            ID
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Título
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Criticidade
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Autor
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Data
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Ações
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for chamado in chamados %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ chamado.id }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ chamado.titulo }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-sm font-medium rounded-full 
+                                {% if chamado.status == 'Aberto' %}
+                                    bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-500/30
+                                {% elif chamado.status == 'Em Andamento' %}
+                                    bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-500/30
+                                {% elif chamado.status == 'Encerrado' %}
+                                    bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 border border-purple-500/30
+                                {% elif chamado.status == 'Reprovado' %}
+                                    bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-500/30
+                                {% endif %}">
+                                {{ chamado.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 text-sm font-medium rounded-full 
+                                {% if chamado.criticidade == 'Baixa' %}
+                                    bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200
+                                {% elif chamado.criticidade == 'Média' %}
+                                    bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                {% elif chamado.criticidade == 'Alta' %}
+                                    bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                {% elif chamado.criticidade == 'Urgente' %}
+                                    bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse
+                                {% endif %}">
+                                {{ chamado.criticidade }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {{ chamado.autor.nome }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="{{ url_for('visualizar_chamado', id=chamado.id) }}" 
+                               class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200">
+                                <i class="fas fa-eye mr-1"></i> Visualizar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

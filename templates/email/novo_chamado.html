@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3B82F6;
+            margin-bottom: 10px;
+        }
+        .chamado-info {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .chamado-titulo {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3B82F6;
+            margin-bottom: 10px;
+        }
+        .chamado-meta {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3B82F6;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎧 Sistema de Chamados</div>
+            <h2>Novo Chamado Criado</h2>
+        </div>
+
+        <p>Um novo chamado foi criado no sistema:</p>
+
+        <div class="chamado-info">
+            <div class="chamado-titulo">{{ chamado.titulo }}</div>
+            <div class="chamado-meta">
+                <strong>Autor:</strong> {{ autor.nome }}<br>
+                <strong>Data:</strong> {{ chamado.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+            </div>
+            <p style="white-space: pre-wrap;">{{ chamado.descricao }}</p>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{ url_for('visualizar_chamado', id=chamado.id, _external=True) }}" class="button">
+                Ver Chamado
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Este é um email automático. Por favor, não responda.</p>
+            <p>Sistema de Chamados - Borgno Transportes</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+{% if current_user.is_authenticated %}
+<nav class="bg-gradient-to-r from-indigo-800 to-blue-900 shadow-lg">
+    <div class="responsive-container">
+        <div class="flex items-center justify-between h-16">
+            <!-- Logo e Nome -->
+            <div class="flex items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <i class="fas fa-truck text-blue-300 text-xl mr-2"></i>
+                    <a href="{{ url_for('home') }}" class="text-white font-bold text-xl">Borgno Transportes</a>
+                </div>
+                
+                <!-- Menu Desktop -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-2">
+                        {% if current_user.is_admin %}
+                            <a href="{{ url_for('dashboard') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                                <i class="fas fa-chart-line mr-1"></i> Dashboard
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('novo_chamado') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-plus-circle mr-1"></i> Novo Chamado
+                        </a>
+                        <a href="{{ url_for('meus_chamados') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-ticket-alt mr-1"></i> Meus Chamados
+                        </a>
+                        <a href="{{ url_for('exportar_chamados') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-file-pdf mr-1"></i> Exportar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Área do Usuário e Notificações -->
+            <div class="flex items-center space-x-2">
+                <!-- Contador de Notificações -->
+                <div class="relative hidden md:block">
+                    <a href="#" id="notification-icon" class="text-blue-100 hover:text-white p-2">
+                        <i class="fas fa-bell"></i>
+                        <span id="notification-count" class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">0</span>
+                    </a>
+                </div>
+                
+                <!-- Info do Usuário -->
+                <div class="hidden md:flex items-center bg-blue-800 bg-opacity-50 rounded-full px-3 py-1">
+                    <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center mr-2">
+                        <span class="text-white font-medium">{{ current_user.nome[0] | upper }}</span>
+                    </div>
+                    <span class="text-blue-100">{{ current_user.nome }}</span>
+                </div>
+                
+                <!-- Botão de Logout -->
+                <a href="{{ url_for('logout') }}" class="text-blue-100 hover:bg-red-700 hover:text-white px-3 py-1 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Sair
+                </a>
+                
+                <!-- Botão de Menu Mobile -->
+                <button type="button" class="md:hidden text-blue-100 hover:text-white focus:outline-none" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Menu Mobile -->
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-blue-800 rounded-b-lg">
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('dashboard') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-chart-line mr-1"></i> Dashboard
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('novo_chamado') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-plus-circle mr-1"></i> Novo Chamado
+                </a>
+                <a href="{{ url_for('meus_chamados') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-ticket-alt mr-1"></i> Meus Chamados
+                </a>
+                <a href="{{ url_for('exportar_chamados') }}" class="text-blue-100 hover:bg-blue-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-file-pdf mr-1"></i> Exportar
+                </a>
+                
+                <!-- Mobile: Info do Usuário -->
+                <div class="text-blue-100 px-3 py-2 flex items-center border-t border-blue-700 mt-2 pt-2">
+                    <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center mr-2">
+                        <span class="text-white font-medium">{{ current_user.nome[0] | upper }}</span>
+                    </div>
+                    <span>{{ current_user.nome }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endif %}

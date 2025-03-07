@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-16">
+            <h1 class="text-4xl font-bold mb-4">Documentação do Sistema</h1>
+            <p class="text-xl text-gray-400">Guia completo para utilização do Sistema de Chamados</p>
+        </div>
+
+        <!-- Conteúdo -->
+        <div class="grid gap-12">
+            <!-- Introdução -->
+            <section class="bg-gray-800/50 rounded-2xl p-8">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-book text-blue-500 mr-3"></i>
+                    Introdução
+                </h2>
+                <p class="text-gray-300 leading-relaxed">
+                    O Sistema de Chamados da Borgno Transportes foi desenvolvido para facilitar a comunicação entre usuários e equipe de suporte.
+                    Com ele, você pode registrar, acompanhar e resolver problemas de forma eficiente e organizada.
+                </p>
+            </section>
+
+            <!-- Como Criar um Chamado -->
+            <section class="bg-gray-800/50 rounded-2xl p-8">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-plus-circle text-green-500 mr-3"></i>
+                    Como Criar um Chamado
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mt-1">
+                            <span class="text-green-500 font-semibold">1</span>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-white">Acesse "Novo Chamado"</h3>
+                            <p class="text-gray-400 mt-1">Clique no botão "Novo Chamado" no menu superior.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mt-1">
+                            <span class="text-green-500 font-semibold">2</span>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-white">Preencha os Dados</h3>
+                            <p class="text-gray-400 mt-1">
+                                - Título: Breve descrição do problema<br>
+                                - Descrição: Detalhes completos do problema<br>
+                                - Prioridade: Urgência do chamado (Baixa, Média, Alta)
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mt-1">
+                            <span class="text-green-500 font-semibold">3</span>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-white">Envie o Chamado</h3>
+                            <p class="text-gray-400 mt-1">Clique em "Criar Chamado" para enviar.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Status dos Chamados -->
+            <section class="bg-gray-800/50 rounded-2xl p-8">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+                    Status dos Chamados
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-500"></i>
+                            </div>
+                            <h3 class="ml-4 text-lg font-medium">Aberto</h3>
+                        </div>
+                        <p class="text-gray-400">Chamado registrado e aguardando atendimento da equipe de suporte.</p>
+                    </div>
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                            </div>
+                            <h3 class="ml-4 text-lg font-medium">Encerrado</h3>
+                        </div>
+                        <p class="text-gray-400">Chamado resolvido e finalizado pela equipe de suporte.</p>
+                    </div>
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-times-circle text-red-500"></i>
+                            </div>
+                            <h3 class="ml-4 text-lg font-medium">Reprovado</h3>
+                        </div>
+                        <p class="text-gray-400">Chamado não aprovado ou cancelado pela equipe de suporte.</p>
+                    </div>
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-comments text-blue-500"></i>
+                            </div>
+                            <h3 class="ml-4 text-lg font-medium">Em Atendimento</h3>
+                        </div>
+                        <p class="text-gray-400">Chamado está sendo atendido pela equipe de suporte.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notificações -->
+            <section class="bg-gray-800/50 rounded-2xl p-8">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-bell text-purple-500 mr-3"></i>
+                    Sistema de Notificações
+                </h2>
+                <div class="space-y-6">
+                    <p class="text-gray-300">
+                        O sistema enviará notificações automáticas para mantê-lo informado sobre seus chamados:
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-700/30 rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-comment text-blue-500 mr-3"></i>
+                                <h3 class="text-lg font-medium">Novas Respostas</h3>
+                            </div>
+                            <p class="text-gray-400">Quando houver uma nova resposta em seu chamado.</p>
+                        </div>
+                        <div class="bg-gray-700/30 rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                                <h3 class="text-lg font-medium">Chamado Encerrado</h3>
+                            </div>
+                            <p class="text-gray-400">Quando seu chamado for resolvido e encerrado.</p>
+                        </div>
+                        <div class="bg-gray-700/30 rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-times-circle text-red-500 mr-3"></i>
+                                <h3 class="text-lg font-medium">Chamado Reprovado</h3>
+                            </div>
+                            <p class="text-gray-400">Quando seu chamado for reprovado pela equipe.</p>
+                        </div>
+                        <div class="bg-gray-700/30 rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-envelope text-yellow-500 mr-3"></i>
+                                <h3 class="text-lg font-medium">Email</h3>
+                            </div>
+                            <p class="text-gray-400">Receba também notificações por email.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dicas -->
+            <section class="bg-gray-800/50 rounded-2xl p-8">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-lightbulb text-yellow-500 mr-3"></i>
+                    Dicas Importantes
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <h3 class="text-lg font-medium mb-3">Seja Claro e Objetivo</h3>
+                        <p class="text-gray-400">Descreva o problema de forma clara, incluindo todos os detalhes relevantes.</p>
+                    </div>
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <h3 class="text-lg font-medium mb-3">Prioridade Adequada</h3>
+                        <p class="text-gray-400">Escolha a prioridade correta baseada na urgência real do problema.</p>
+                    </div>
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <h3 class="text-lg font-medium mb-3">Acompanhe as Respostas</h3>
+                        <p class="text-gray-400">Fique atento às notificações e responda quando necessário.</p>
+                    </div>
+                    <div class="bg-gray-700/30 rounded-xl p-6">
+                        <h3 class="text-lg font-medium mb-3">Mantenha Atualizado</h3>
+                        <p class="text-gray-400">Se houver novas informações, adicione como resposta ao chamado.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

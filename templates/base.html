@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Chamados - Borgno Transportes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#4f46e5',
+                        tertiary: '#0ea5e9',
+                        neutral: '#6b7280',
+                        'accent-light': '#e0f2fe',
+                        'accent-dark': '#0c4a6e',
+                    },
+                    screens: {
+                        'xs': '475px',
+                        'sm': '640px',
+                        'md': '768px',
+                        'lg': '1024px',
+                        'xl': '1280px',
+                        '2xl': '1536px',
+                    }
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        /* Adiciona classes responsivas personalizadas */
+        .responsive-container {
+            width: 100%;
+            padding-right: 1rem;
+            padding-left: 1rem;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        @media (min-width: 640px) {
+            .responsive-container {
+                max-width: 640px;
+            }
+        }
+        @media (min-width: 768px) {
+            .responsive-container {
+                max-width: 768px;
+            }
+        }
+        @media (min-width: 1024px) {
+            .responsive-container {
+                max-width: 1024px;
+            }
+        }
+        @media (min-width: 1280px) {
+            .responsive-container {
+                max-width: 1280px;
+            }
+        }
+        
+        /* Estilos para melhorar a responsividade de tabelas */
+        .responsive-table {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Watermark para exportação de PDF */
+        .confidential-watermark {
+            position: relative;
+        }
+        .confidential-watermark::after {
+            content: "CONFIDENCIAL";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 6rem;
+            font-weight: bold;
+            color: rgba(220, 38, 38, 0.1);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Melhora a responsividade em dispositivos menores */
+        @media (max-width: 640px) {
+            .mobile-stack {
+                flex-direction: column !important;
+            }
+            .mobile-full {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                margin-bottom: 0.5rem !important;
+            }
+            .mobile-text-center {
+                text-align: center !important;
+            }
+            .mobile-p-2 {
+                padding: 0.5rem !important;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 dark:bg-gray-900 text-gray-200 min-h-screen flex flex-col">
+    {% include 'navbar.html' %}
+    
+    <div class="flex-grow">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="responsive-container py-4">
+            {% for category, message in messages %}
+            <div id="flash-message" class="{% if category == 'success' %}bg-green-100 border-green-500 text-green-700{% elif category == 'error' %}bg-red-100 border-red-500 text-red-700{% elif category == 'warning' %}bg-yellow-100 border-yellow-500 text-yellow-700{% else %}bg-blue-100 border-blue-500 text-blue-700{% endif %} px-4 py-3 mb-4 rounded-lg border-l-4 shadow-md">
+                <span class="mr-2">{% if category == 'success' %}<i class="fas fa-check-circle"></i>{% elif category == 'error' %}<i class="fas fa-exclamation-circle"></i>{% elif category == 'warning' %}<i class="fas fa-exclamation-triangle"></i>{% else %}<i class="fas fa-info-circle"></i>{% endif %}</span>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+        <div class="responsive-container">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h3 class="text-lg font-bold mb-2">Sistema de Chamados - Borgno Transportes</h3>
+                    <p class="text-gray-400 text-sm">&copy; 2025 Todos os direitos reservados</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Meta tag CSRF para resolver o problema do token CSRF -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- Scripts comuns com token CSRF -->
+    <script>
+        // Configuração global para incluir o token CSRF em todas as requisições AJAX
+        document.addEventListener('DOMContentLoaded', function() {
+            // Adicionar o token CSRF a todos os formulários automaticamente
+            const forms = document.querySelectorAll('form');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            forms.forEach(form => {
+                // Só adicionar o campo se não existir
+                if (!form.querySelector('input[name="csrf_token"]')) {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = csrfToken;
+                    form.appendChild(csrfInput);
+                }
+            });
+            
+            // Configurar headers para fetch e XMLHttpRequest
+            const originalFetch = window.fetch;
+            window.fetch = function() {
+                let [resource, config] = arguments;
+                if(config == null) {
+                    config = {};
+                }
+                if(config.headers == null) {
+                    config.headers = {};
+                }
+                
+                // Se não for um objeto de Headers, crie um
+                if (!(config.headers instanceof Headers)) {
+                    config.headers = new Headers(config.headers);
+                }
+                
+                config.headers.set('X-CSRFToken', csrfToken);
+                
+                return originalFetch.apply(this, [resource, config]);
+            };
+            
+            // Para XMLHttpRequest
+            const originalOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function() {
+                this.addEventListener('readystatechange', function() {
+                    if(this.readyState === 1) {
+                        this.setRequestHeader('X-CSRFToken', csrfToken);
+                    }
+                });
+                originalOpen.apply(this, arguments);
+            };
+        });
+        
+        // Função para dispositivos móveis - toggle menu
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu.classList.contains('hidden')) {
+                mobileMenu.classList.remove('hidden');
+            } else {
+                mobileMenu.classList.add('hidden');
+            }
+        }
+        
+        // Auto-esconder mensagens flash após 3 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.getElementById('flash-message');
+            if (flashMessages) {
+                setTimeout(function() {
+                    flashMessages.style.transition = 'opacity 0.5s ease';
+                    flashMessages.style.opacity = '0';
+                    setTimeout(function() {
+                        flashMessages.style.display = 'none';
+                    }, 500);
+                }, 3000);
+            }
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

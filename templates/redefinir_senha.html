@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 py-6 flex flex-col justify-center sm:py-12">
+    <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+        <div class="relative px-4 py-10 bg-gray-800 mx-8 md:mx-0 shadow rounded-3xl sm:p-10">
+            <div class="max-w-md mx-auto">
+                <div class="flex items-center space-x-5">
+                    <div class="block pl-2 font-semibold text-xl text-gray-100">
+                        <h2 class="leading-relaxed">Redefinir Senha</h2>
+                        <p class="text-sm text-gray-400 font-normal leading-relaxed">
+                            Digite sua nova senha
+                        </p>
+                    </div>
+                </div>
+                
+                <form method="POST" class="divide-y divide-gray-700" id="formRedefinirSenha">
+                    <div class="py-8 text-base leading-6 space-y-4 text-gray-100 sm:text-lg sm:leading-7">
+                        <div class="flex flex-col">
+                            <label for="senha" class="leading-loose text-gray-300">Nova Senha</label>
+                            <input type="password" id="senha" name="senha" required
+                                   class="px-4 py-2 border border-gray-600 focus:ring-2 focus:ring-blue-500 
+                                          focus:border-transparent rounded-md bg-gray-700 text-white 
+                                          placeholder-gray-400"
+                                   placeholder="Digite sua nova senha">
+                        </div>
+                        
+                        <div class="flex flex-col">
+                            <label for="confirmar_senha" class="leading-loose text-gray-300">Confirmar Senha</label>
+                            <input type="password" id="confirmar_senha" name="confirmar_senha" required
+                                   class="px-4 py-2 border border-gray-600 focus:ring-2 focus:ring-blue-500 
+                                          focus:border-transparent rounded-md bg-gray-700 text-white 
+                                          placeholder-gray-400"
+                                   placeholder="Confirme sua nova senha">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 flex items-center space-x-4">
+                        <a href="{{ url_for('login') }}" 
+                           class="flex justify-center items-center w-full px-4 py-3 rounded-md 
+                                  focus:outline-none border border-gray-600 hover:bg-gray-700 
+                                  transition-colors text-gray-300">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </a>
+                        
+                        <button type="submit"
+                                class="flex justify-center items-center w-full px-4 py-3 rounded-md 
+                                       focus:outline-none bg-blue-600 hover:bg-blue-700 text-white 
+                                       transition-colors">
+                            <i class="fas fa-key mr-2"></i>
+                            Redefinir Senha
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formRedefinirSenha').addEventListener('submit', function(e) {
+    const senha = document.getElementById('senha').value;
+    const confirmarSenha = document.getElementById('confirmar_senha').value;
+    
+    if (senha.length < 6) {
+        e.preventDefault();
+        toastSystem.create('A senha deve ter pelo menos 6 caracteres!', 'error');
+        return;
+    }
+    
+    if (senha !== confirmarSenha) {
+        e.preventDefault();
+        toastSystem.create('As senhas não coincidem!', 'error');
+        return;
+    }
+});
+</script>
+{% endblock %}
