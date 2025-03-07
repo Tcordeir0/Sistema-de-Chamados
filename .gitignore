@@ -4,3 +4,14 @@ echo "*.pyc" >> .gitignore
 echo ".env" >> .gitignoregit branch main
 git checkout main
 node_modules
+git commit -m "feat: implementar ordenação de chamados
+
+- Adicionar menu de ordenação com opções de ID, data e criticidade
+- Implementar funcionalidade de ordenação crescente e decrescente
+- Otimizar performance da ordenação com query parameters
+- Adicionar transições suaves no menu de ordenação
+- Garantir compatibilidade com tema claro/escuro
+
+BREAKING CHANGES: 
+- Remover filtro de usuário do menu de ordenação
+- Limitar visualização de chamados apenas para administradores"
