@@ -34,12 +34,16 @@
                     </a>
                     
                     {% if current_user.has_role('ADM') and chamado.status == 'Aberto' %}
-                    <button onclick="encerrarChamado({{ chamado.id }})" 
-                       class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                    <button 
+                        data-action="encerrar"
+                        data-id="{{ chamado.id }}" 
+                        class="btn-acao bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                         <i class="fas fa-check-circle mr-2"></i>Encerrar
                     </button>
-                    <button onclick="abrirModalReprovacao({{ chamado.id }})" 
-                       class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                    <button 
+                        data-action="reprovar"
+                        data-id="{{ chamado.id }}" 
+                        class="btn-acao bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                         <i class="fas fa-times-circle mr-2"></i>Reprovar
                     </button>
                     {% endif %}
@@ -341,6 +345,24 @@ function enviarRespostaChamado(event) {
     
     return false;
 }
+
+// Adicionar event listeners para os botões de ação
+document.addEventListener('DOMContentLoaded', () => {
+    const botoesAcao = document.querySelectorAll('.btn-acao');
+    
+    botoesAcao.forEach(botao => {
+        botao.addEventListener('click', () => {
+            const action = botao.getAttribute('data-action');
+            const id = botao.getAttribute('data-id');
+            
+            if (action === 'encerrar') {
+                encerrarChamado(id);
+            } else if (action === 'reprovar') {
+                abrirModalReprovacao(id);
+            }
+        });
+    });
+});
 </script>
 
 {% endblock %}
