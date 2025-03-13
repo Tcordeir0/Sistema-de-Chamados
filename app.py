@@ -19,11 +19,23 @@ from io import BytesIO
 from utils.pdf_generator import PDFGenerator
 from sqlalchemy import case
 
-app = Flask(__name__)
+# Configurações do Flask (otimizado para inicialização mais rápida)
+app = Flask(__name__, 
+           static_folder='static',
+           template_folder='templates')
+
 app.config.from_object(ProductionConfig if os.environ.get('FLASK_ENV') == 'production' else DevelopmentConfig)
+
+# Garantir que a chave secreta esteja definida para sessões
+app.secret_key = app.config['SECRET_KEY']
 
 # Configuração do CSRF Protection
 csrf = CSRFProtect(app)
+
+# Definir cookie seguro para sessão
+app.config['SESSION_COOKIE_SECURE'] = False  # Definir como True apenas em produção com HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
 # Registra o blueprint de email
 app.register_blueprint(email_bp)
@@ -902,4 +914,4 @@ with app.app_context():
         db.session.commit()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=True)
