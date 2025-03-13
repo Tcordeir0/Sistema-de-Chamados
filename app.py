@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort, send_file
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from functools import wraps
 import os
@@ -14,10 +13,14 @@ from flask_limiter.util import get_remote_address
 import pytz
 from routes.email_routes import email_bp
 from api.pdf_api import pdf_api
+from api.search_api import search_api  # Importando a nova API de busca
 from config import DevelopmentConfig, ProductionConfig
 from io import BytesIO
 from utils.pdf_generator import PDFGenerator
 from sqlalchemy import case
+
+# Importando modelos do arquivo models.py
+from models import db, Usuario, Chamado, Resposta, Notificacao
 
 # Configurações do Flask (otimizado para inicialização mais rápida)
 app = Flask(__name__, 
@@ -29,6 +32,9 @@ app.config.from_object(ProductionConfig if os.environ.get('FLASK_ENV') == 'produ
 # Garantir que a chave secreta esteja definida para sessões
 app.secret_key = app.config['SECRET_KEY']
 
+# Inicializar o banco de dados
+db.init_app(app)
+
 # Configuração do CSRF Protection
 csrf = CSRFProtect(app)
 
@@ -37,11 +43,14 @@ app.config['SESSION_COOKIE_SECURE'] = False  # Definir como True apenas em produ
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
-# Registra o blueprint de email
+# Registra o blueprint de rotas de email
 app.register_blueprint(email_bp)
 
 # Registra o blueprint da API de PDF
 app.register_blueprint(pdf_api)
+
+# Registra o blueprint da API de busca
+app.register_blueprint(search_api)  # Registrando a nova API de busca
 
 # Configurações de segurança
 talisman = Talisman(
@@ -84,8 +93,6 @@ def format_datetime(value):
         return ""
     return value.strftime('%d/%m/%Y %H:%M')
 
-db = SQLAlchemy(app)
-
 # Login Manager
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -99,54 +106,6 @@ def force_login():
     if not any(request.endpoint and request.endpoint.startswith(ep) for ep in public_endpoints):
         if not current_user.is_authenticated:
             return redirect(url_for('login'))
-
-class Usuario(UserMixin, db.Model):
-    """Modelo para armazenar informações dos usuários do sistema"""
-    __tablename__ = 'usuario'
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    senha = db.Column(db.String(200), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    reset_token = db.Column(db.String(100), unique=True)
-    chamados = db.relationship('Chamado', backref='autor', lazy=True)
-    respostas = db.relationship('Resposta', backref='autor_resposta', lazy=True)
-    notificacoes = db.relationship('Notificacao', backref='usuario', lazy=True)
-
-    def has_role(self, role):
-        return self.is_admin if role == 'ADM' else True
-
-class Chamado(db.Model):
-    """Modelo para armazenar informações dos chamados"""
-    __tablename__ = 'chamado'
-    id = db.Column(db.Integer, primary_key=True)
-    titulo = db.Column(db.String(100), nullable=False)
-    descricao = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), default='Aberto')
-    criticidade = db.Column(db.String(20), default='Média')
-    data_criacao = db.Column(db.DateTime, default=datetime.now)
-    autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    respostas = db.relationship('Resposta', backref='chamado', lazy=True)
-
-class Resposta(db.Model):
-    """Modelo para armazenar as respostas dos chamados"""
-    __tablename__ = 'resposta'
-    id = db.Column(db.Integer, primary_key=True)
-    conteudo = db.Column(db.Text, nullable=False)
-    data_resposta = db.Column(db.DateTime, default=datetime.now)
-    chamado_id = db.Column(db.Integer, db.ForeignKey('chamado.id'), nullable=False)
-    autor_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-
-class Notificacao(db.Model):
-    """Modelo para armazenar notificações dos usuários"""
-    __tablename__ = 'notificacao'
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    chamado_id = db.Column(db.Integer, db.ForeignKey('chamado.id'), nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)  # 'resposta' ou 'resolucao'
-    mensagem = db.Column(db.String(200), nullable=False)
-    lida = db.Column(db.Boolean, default=False)
-    data_criacao = db.Column(db.DateTime, default=datetime.now)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -903,15 +862,5 @@ def exportar_chamado_pdf(id):
         mimetype='application/pdf'
     )
 
-# Inicialização do banco de dados
-with app.app_context():
-    db.create_all()
-    
-    # Verificar e atualizar o usuário Talys Silva como admin
-    talys = Usuario.query.filter(Usuario.nome.ilike('talys silva')).first()
-    if talys:
-        talys.is_admin = True
-        db.session.commit()
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
